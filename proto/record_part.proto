@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package record;
+
+//动态头像信息
+message Dynamic_Avatar{
+  int32 avatar_number = 1; //选择的头像id 1是默认头像 可省略
+  int32 avatar_id = 2; //加载头像资源id（仅选择动态头像时生效）
+}
+
+//忍者资源信息
+message Ninja_Resource{
+  int32 fashion_resource =1; //时装资源编号
+}
+
+//忍者基础信息
+message Ninja_Basic{
+  int32 ninja_id = 1; //编号
+  Ninja_Resource ninja_resource = 4; //资源
+}
+
+//忍者信息
+message Ninja{
+  Ninja_Basic basic = 1; //基础信息
+}
+
+//对局数据 存放对局相关信息
+message Game{
+  repeated Ninja ninja = 1; //对三个忍者分别记录
+}
+
+//用户隐私数据 正常情况下看不到
+message User_Data_Private{
+  int32 area_code = 2; //区号+400000
+}
+
+//用户数据 存放存档相关信息
+message User_Data{
+  int64 user_id = 1; //用户id
+  string nickname = 2; //昵称
+  int32 level = 3; //等级
+  int32 score = 5; //段位分数
+  Game game = 7; //对局数据
+  string avatar_url = 8; //头像
+  string area_name = 27; //区名
+  User_Data_Private private = 44; //隐私数据
+  int32 rank = 51; //排名
+  Dynamic_Avatar dynamic_avatar = 127; //动态头像
+}
+
+//对局玩家数据
+message Player_Data{
+  int32 pos1 = 1;
+  int32 pos2 = 2;
+  //不知何意图，有两个记录1P2P的参数
+  User_Data userdata = 4; //用户数据
+}
+
+//内层信息
+message Information_Inner{
+  repeated Player_Data player = 2; //玩家数据
+}
+
+message Information{
+  Information_Inner inner = 1; //这里有一个意义不明的嵌套，只能套两层Information（笑）
+}
+
+//内层信息
+message Settle_Information_Inner{
+  int32 statu = 4; //胜负状态 1平 2负 3胜
+}
+
+message Settle_Information{
+  Settle_Information_Inner inner= 1; //意义不明的嵌套+1
+}
+
+//对局记录
+message Record{
+  Information information = 2; //局内信息
+  //3是控制 以后再做
+  Settle_Information settle_information = 4; //结算信息
+}
+
+//Github:TPPPP72
+//BiliBili:TPPPP72
+//QQ:906483498

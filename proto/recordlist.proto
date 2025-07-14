@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package recordlist;
+
+//动态头像信息
+message Dynamic_Avatar_Info{
+  int32 avatar_number = 1; //选择的头像id 1是默认头像 可省略
+  int32 avatar_id = 2; //加载头像资源id（仅选择动态头像时生效）
+}
+
+//玩家信息
+message Player_Info {
+  string nickname = 1; //昵称（UTF-8）
+  string avatar_url = 2; //头像网址（部分可解析）
+  int32 area_code = 3; //区号+2000
+  string area_name = 4; //区名
+  repeated int32 ninja_number = 6; //忍者编码
+  int32 rank = 7; //段位排名
+  repeated int32 fashion_number = 8; //时装编码
+  Dynamic_Avatar_Info dynamic_avatar  = 9; //动态头像信息
+}
+
+
+message Player_Record {
+  int64 timestamp = 1; //时间戳
+  int32 statu = 2; //胜负状态 1平 2负 3胜
+  string datetime = 3; //4_2_2T2_2_2格式化时间
+  Player_Info info = 4; //玩家信息
+  int32 is_temp = 5; //临时录像标识
+}
+
+// 列表文件
+message RecordList {
+  repeated Player_Record item = 1; //单条记录
+}
+
+
+//Github:TPPPP72
+//BiliBili:TPPPP72
+//QQ:906483498
