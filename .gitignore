@@ -1,0 +1,6 @@
+temp/
+export/
+dll/
+compile_commands.json
+NarutoRecordManager.exe
+setup_config.iss
