@@ -150,7 +150,7 @@ void MyFrame::OnSettingExportPath(wxCommandEvent &event) {
   wxDirDialog dirDialog(this, wxString::FromUTF8("选择导出的文件夹"), "",
                         wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
   if (dirDialog.ShowModal() == wxID_OK) {
-    Setting::WriteData(Setting::Data{dirDialog.GetPath().ToStdString()});
+    Setting::WriteData(Setting::Data{dirDialog.GetPath().ToUTF8().data()});
     SetStatusText(wxString::FromUTF8("设置导出文件夹为:") +
                   dirDialog.GetPath());
   } else {
@@ -283,7 +283,7 @@ void MyFrame::OnExport(wxCommandEvent &event) {
     SetStatusText(wxString::FromUTF8("正在导出文件:" + file));
     if (ADB::PullRemoteFile(
             FileManager::GetListByDeviceID(lists, selected_device_id), file,
-            Setting::GetData().Export_Path))
+            wxString::FromUTF8(Setting::GetData().Export_Path).ToStdString()))
       ++cnt;
     // 进度显示待做
   }

@@ -1,6 +1,6 @@
 temp/
 export/
 dll/
-compile_commands.json
 *.exe
-setup_config.iss
+*.json
+*.iss
