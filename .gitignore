@@ -2,5 +2,5 @@ temp/
 export/
 dll/
 compile_commands.json
-NarutoRecordManager.exe
+*.exe
 setup_config.iss
