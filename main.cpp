@@ -1,5 +1,6 @@
 #include "./include/adb.hpp"
 #include "./include/file.hpp"
+#include "include/data.h"
 #include "include/setting.hpp"
 #include "wx/dynarray.h"
 #include "wx/event.h"
@@ -22,7 +23,7 @@ public:
   virtual bool OnInit();
 };
 
-enum { ID_Export = 1001, ID_Import };
+enum { ID_Export = 1001, ID_Import, ID_Setting };
 
 class MyFrame : public wxFrame {
 public:
@@ -35,6 +36,7 @@ private:
   void OnDeviceSelected(wxCommandEvent &event);
   void OnExit(wxCommandEvent &event);
   void OnAbout(wxCommandEvent &event);
+  void OnSettingExportPath(wxCommandEvent &event);
   void OnImportFromComputer(wxCommandEvent &event);
   void OnRefresh(wxCommandEvent &event);
   void OnFileSelected(wxCommandEvent &event);
@@ -69,9 +71,13 @@ MyFrame::MyFrame()
   wxMenu *helpMenu = new wxMenu;
   helpMenu->Append(wxID_ABOUT, wxString::FromUTF8("关于"));
 
+  wxMenu *settingMenu = new wxMenu;
+  settingMenu->Append(ID_Setting, wxString::FromUTF8("导出路径"));
+
   wxMenuBar *menuBar = new wxMenuBar;
   menuBar->Append(controlMenu, wxString::FromUTF8("操作"));
   menuBar->Append(helpMenu, wxString::FromUTF8("帮助"));
+  menuBar->Append(settingMenu, wxString::FromUTF8("设置"));
 
   SetMenuBar(menuBar);
 
@@ -111,6 +117,7 @@ MyFrame::MyFrame()
   deviceList->Bind(wxEVT_LISTBOX, &MyFrame::OnDeviceSelected, this);
   fileList->Bind(wxEVT_LISTBOX, &MyFrame::OnFileSelected, this);
   fileList->Bind(wxEVT_RIGHT_DOWN, &MyFrame::OnFileListRightClick, this);
+  Bind(wxEVT_MENU, &MyFrame::OnSettingExportPath, this, ID_Setting);
   Bind(wxEVT_MENU, &MyFrame::OnAbout, this, wxID_ABOUT);
   Bind(wxEVT_MENU, &MyFrame::OnImportFromComputer, this, ID_Import);
   Bind(wxEVT_MENU, &MyFrame::OnExit, this, wxID_EXIT);
@@ -137,6 +144,19 @@ void MyFrame::OnAbout(wxCommandEvent &event) {
                          "358783831\nGithub:https://github.com/TPPPP72/"
                          "NarutoRecordManager\n\n版本号:0.2"),
       wxString::FromUTF8("关于该软件"), wxOK | wxICON_INFORMATION);
+}
+
+void MyFrame::OnSettingExportPath(wxCommandEvent &event) {
+  wxDirDialog dirDialog(this, wxString::FromUTF8("选择导出的文件夹"), "",
+                        wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+  if (dirDialog.ShowModal() == wxID_OK) {
+    Setting::WriteData(Setting::Data{dirDialog.GetPath().ToStdString()});
+    SetStatusText(wxString::FromUTF8("设置导出文件夹为:") +
+                  dirDialog.GetPath());
+  } else {
+    wxMessageBox(wxString::FromUTF8("未选择文件夹"), wxString::FromUTF8("错误"),
+                 wxOK | wxICON_ERROR);
+  }
 }
 
 void MyFrame::OnRefresh(wxCommandEvent &event) {
@@ -218,8 +238,17 @@ void MyFrame::OnFileSelected(wxCommandEvent &event) {
 }
 
 void MyFrame::OnFileListRightClick(wxMouseEvent &event) {
-  wxMenu menu;
-  menu.Append(ID_Export, wxString::FromUTF8("导出到电脑"));
+  wxPoint pos_in_list = event.GetPosition();
+  wxPoint pos_on_screen = fileList->ClientToScreen(pos_in_list);
+  wxPoint pos_in_frame = this->ScreenToClient(pos_on_screen);
+
+  int file_list_index = fileList->HitTest(pos_in_list);
+  if (file_list_index != wxNOT_FOUND) {
+    fileList->SetSelection(file_list_index);
+    SetStatusText(wxString::FromUTF8("选择文件:" + fileList->GetString(file_list_index)));
+  }
+  wxMenu *menu=new wxMenu;
+  menu->Append(ID_Export, wxString::FromUTF8("导出到电脑"));
 
   if (lists.size() >= 2) {
     wxMenu *sendSubMenu = new wxMenu;
@@ -231,24 +260,16 @@ void MyFrame::OnFileListRightClick(wxMouseEvent &event) {
         Bind(wxEVT_MENU, &MyFrame::OnSendToDynamicDevice, this, 2000 + item);
       }
     }
-    menu.AppendSubMenu(sendSubMenu, wxString::FromUTF8("发送到其他设备"));
+    menu->AppendSubMenu(sendSubMenu, wxString::FromUTF8("发送到其他设备"));
   }
 
-  menu.Append(wxID_DELETE, wxString::FromUTF8("删除"));
+  menu->Append(wxID_DELETE, wxString::FromUTF8("删除"));
+  menu->Bind(wxEVT_MENU, &MyFrame::OnExport, this, ID_Export);
+  menu->Bind(wxEVT_MENU, &MyFrame::OnDelete, this, wxID_DELETE);
 
-  wxPoint pos_in_list = event.GetPosition();
-  wxPoint pos_on_screen = fileList->ClientToScreen(pos_in_list);
-  wxPoint pos_in_frame = this->ScreenToClient(pos_on_screen);
+  PopupMenu(menu, pos_in_frame);
 
-  int file_list_index = fileList->HitTest(pos_in_list);
-  if (file_list_index != wxNOT_FOUND) {
-    fileList->SetSelection(file_list_index);
-  }
-
-  PopupMenu(&menu, pos_in_frame);
-
-  Bind(wxEVT_MENU, &MyFrame::OnExport, this, ID_Export);
-  Bind(wxEVT_MENU, &MyFrame::OnDelete, this, wxID_DELETE);
+  delete menu;
 }
 
 void MyFrame::OnExport(wxCommandEvent &event) {
