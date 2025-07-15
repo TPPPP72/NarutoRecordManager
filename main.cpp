@@ -76,8 +76,8 @@ MyFrame::MyFrame()
 
   wxMenuBar *menuBar = new wxMenuBar;
   menuBar->Append(controlMenu, wxString::FromUTF8("操作"));
-  menuBar->Append(helpMenu, wxString::FromUTF8("帮助"));
   menuBar->Append(settingMenu, wxString::FromUTF8("设置"));
+  menuBar->Append(helpMenu, wxString::FromUTF8("帮助"));
 
   SetMenuBar(menuBar);
 
