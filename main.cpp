@@ -1,5 +1,6 @@
 #include "./include/adb.hpp"
 #include "./include/file.hpp"
+#include "include/setting.hpp"
 #include "wx/dynarray.h"
 #include "wx/event.h"
 #include "wx/language.h"
@@ -7,6 +8,7 @@
 #include "wx/string.h"
 #include <algorithm>
 #include <string>
+#include <wx/filename.h>
 #include <wx/wxprec.h>
 
 #ifndef WX_PRECOMP
@@ -20,7 +22,7 @@ public:
   virtual bool OnInit();
 };
 
-enum { ID_Export = 1001 };
+enum { ID_Export = 1001, ID_Import };
 
 class MyFrame : public wxFrame {
 public:
@@ -33,6 +35,7 @@ private:
   void OnDeviceSelected(wxCommandEvent &event);
   void OnExit(wxCommandEvent &event);
   void OnAbout(wxCommandEvent &event);
+  void OnImportFromComputer(wxCommandEvent &event);
   void OnRefresh(wxCommandEvent &event);
   void OnFileSelected(wxCommandEvent &event);
   void OnFileListRightClick(wxMouseEvent &event);
@@ -53,22 +56,22 @@ bool MyApp::OnInit() {
 
 MyFrame::MyFrame()
     : wxFrame(NULL, wxID_ANY,
-              wxString::FromUTF8(
-                  "火影忍者手游录像管理器 https://github.com/TPPPP72"),
+              wxString::FromUTF8("火影忍者手游录像管理器 TPPPP开发"),
               wxDefaultPosition, wxSize(1024, 768)) {
 
   // UI初始化
   SetIcon(wxICON(NarutoRecordManager));
   // 工具栏
-  wxMenu *refreshMenu = new wxMenu;
-  refreshMenu->Append(wxID_REFRESH, wxString::FromUTF8("刷新\tF5"));
+  wxMenu *controlMenu = new wxMenu;
+  controlMenu->Append(wxID_REFRESH, wxString::FromUTF8("刷新\tF5"));
+  controlMenu->Append(ID_Import, wxString::FromUTF8("从电脑导入"));
 
-  wxMenu *aboutMenu = new wxMenu;
-  aboutMenu->Append(wxID_ABOUT, wxString::FromUTF8("关于"));
+  wxMenu *helpMenu = new wxMenu;
+  helpMenu->Append(wxID_ABOUT, wxString::FromUTF8("关于"));
 
   wxMenuBar *menuBar = new wxMenuBar;
-  menuBar->Append(refreshMenu, wxString::FromUTF8("操作"));
-  menuBar->Append(aboutMenu, wxString::FromUTF8("帮助"));
+  menuBar->Append(controlMenu, wxString::FromUTF8("操作"));
+  menuBar->Append(helpMenu, wxString::FromUTF8("帮助"));
 
   SetMenuBar(menuBar);
 
@@ -109,6 +112,7 @@ MyFrame::MyFrame()
   fileList->Bind(wxEVT_LISTBOX, &MyFrame::OnFileSelected, this);
   fileList->Bind(wxEVT_RIGHT_DOWN, &MyFrame::OnFileListRightClick, this);
   Bind(wxEVT_MENU, &MyFrame::OnAbout, this, wxID_ABOUT);
+  Bind(wxEVT_MENU, &MyFrame::OnImportFromComputer, this, ID_Import);
   Bind(wxEVT_MENU, &MyFrame::OnExit, this, wxID_EXIT);
   Bind(wxEVT_MENU, &MyFrame::OnRefresh, this, wxID_REFRESH);
 
@@ -126,11 +130,13 @@ MyFrame::MyFrame()
 void MyFrame::OnExit(wxCommandEvent &event) { Close(true); }
 
 void MyFrame::OnAbout(wxCommandEvent &event) {
-  wxMessageBox(wxString::FromUTF8(
-                   "该程序基于Android Debug "
-                   "Bridge，实现火影忍者手游录像的管理迁移等功能\n开发者"
-                   "：TPPPP\nBilibili:https://space.bilibili.com/358783831"),
-               wxString::FromUTF8("关于该软件"), wxOK | wxICON_INFORMATION);
+  wxMessageBox(
+      wxString::FromUTF8("该程序基于Android Debug "
+                         "Bridge，实现火影忍者手游录像的管理迁移等功能\n开发者"
+                         "：TPPPP\nBilibili:https://space.bilibili.com/"
+                         "358783831\nGithub:https://github.com/TPPPP72/"
+                         "NarutoRecordManager\n\n版本号:0.2"),
+      wxString::FromUTF8("关于该软件"), wxOK | wxICON_INFORMATION);
 }
 
 void MyFrame::OnRefresh(wxCommandEvent &event) {
@@ -145,6 +151,43 @@ void MyFrame::OnRefresh(wxCommandEvent &event) {
   }
 
   SetStatusText(wxString::FromUTF8("刷新完成！"));
+}
+
+void MyFrame::OnImportFromComputer(wxCommandEvent &event) {
+  if (deviceList->GetSelection() == wxNOT_FOUND) {
+    wxMessageBox(wxString::FromUTF8("请先在设备列表选择一个设备"),
+                 wxString::FromUTF8("错误"), wxOK | wxICON_ERROR);
+    return;
+  }
+  std::string selected_device_id =
+      deviceList->GetString(deviceList->GetSelection()).ToStdString();
+  wxFileDialog openFileDialog(
+      this, wxString::FromUTF8("选择文件"),
+      wxFileName::DirName(Setting::GetData().Export_Path).GetAbsolutePath(), "",
+      wxString::FromUTF8("所有文件 (*.*)|*.*"),
+      wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_MULTIPLE);
+
+  if (openFileDialog.ShowModal() == wxID_OK) {
+    wxArrayString paths;
+    openFileDialog.GetPaths(paths);
+    int cnt = 0;
+    for (const auto &path : paths) {
+      SetStatusText(wxString::FromUTF8("正在导入文件:" + path));
+      if (ADB::PushRemoteFile_Full(
+              FileManager::GetListByDeviceID(lists, selected_device_id),
+              path.ToStdString())) {
+        ++cnt;
+        fileList->Append(path.substr(path.rfind("\\") + 1));
+      }
+    }
+    SetStatusText(
+        wxString::FromUTF8("导入完成！ " + std::to_string(cnt) + "成功 " +
+                           std::to_string(paths.size() - cnt) + "失败"));
+  } else {
+    wxMessageBox(wxString::FromUTF8("未选择文件"), wxString::FromUTF8("错误"),
+                 wxOK | wxICON_ERROR);
+    return;
+  }
 }
 
 void MyFrame::OnDeviceSelected(wxCommandEvent &event) {
@@ -219,7 +262,7 @@ void MyFrame::OnExport(wxCommandEvent &event) {
     SetStatusText(wxString::FromUTF8("正在导出文件:" + file));
     if (ADB::PullRemoteFile(
             FileManager::GetListByDeviceID(lists, selected_device_id), file,
-            EXPORT_Path))
+            Setting::GetData().Export_Path))
       ++cnt;
     // 进度显示待做
   }

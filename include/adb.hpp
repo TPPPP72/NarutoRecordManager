@@ -65,7 +65,8 @@ GetRecordFiles(std::string SelectedDevice = "no selection") {
 }
 
 inline const bool PullRemoteFile(const FileManager::FileList &list,
-                                 const std::string &file,const std::string& path=TEMP_Path) {
+                                 const std::string &file,
+                                 const std::string &path = TEMP_Path) {
   bool flag = false;
   for (const auto &i : list.recordlist) {
     if (i == file) {
@@ -110,6 +111,25 @@ inline const bool PushRemoteFile(FileManager::FileList &list,
   return false;
 }
 
+inline const bool PushRemoteFile_Full(FileManager::FileList &list,
+                                      const std::string &path) {
+  std::string file = path.substr(path.rfind("\\") + 1);
+  if (!FileManager::is_local_file_exist(path))
+    return false;
+  std::string result = RunADBCommand("push " + path +
+                                         " /storage/emulated/0/Android/data/"
+                                         "com.tencent.KiHan/files/LocalRecord/",
+                                     list.device_id);
+  if (result.find("1 file pushed") != std::string::npos) {
+    if (list.recordlistmatch(file))
+      list.recordlist.emplace_back(file);
+    else if (list.recordmatch(file))
+      list.record.emplace_back(file);
+    return true;
+  }
+  return false;
+}
+
 inline const bool DeleteRemoteFile(FileManager::FileList &list,
                                    const std::string &file) {
   std::string result = RunADBCommand(
@@ -119,8 +139,8 @@ inline const bool DeleteRemoteFile(FileManager::FileList &list,
       list.device_id);
   if (result.length() > 0)
     return false;
-  std::erase(list.recordlist,file);
-  std::erase(list.record,file);
+  std::erase(list.recordlist, file);
+  std::erase(list.record, file);
   return true;
 }
 } // namespace ADB

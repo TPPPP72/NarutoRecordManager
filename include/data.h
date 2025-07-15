@@ -49,25 +49,31 @@ struct Player_Record {
     o << "statu:" << statu << std::endl;
     o << "datetime:" << datetime << std::endl;
     o << "Player_Info:" << std::endl;
-    o<<"\tnickname:"<<info.nickname<<std::endl;
-    o<<"\tavatar_url:"<<info.avatar_url<<std::endl;
-    o<<"\tarea_code:"<<info.area_code<<std::endl;
-    o<<"\tarea_name:"<<info.area_name<<std::endl;
-    o<<"\tninja_number:";
-    for(auto &i:info.ninja_number)
-      o<<i<<' ';
-    o<<std::endl;
-    o<<"\trank:"<<info.rank<<std::endl;
-    o<<"\tfashion_number:";
-    for(auto &i:info.fashion_number)
-      o<<i<<' ';
-    o<<std::endl;
-    o<<"\tdynamic_avatar:"<<std::endl;
-    o<<"\t\tavatar_number:" <<info.dynamic_avatar.avatar_number<<std::endl;
-    o<<"\t\tavatar_id:" << info.dynamic_avatar.avatar_id<<std::endl;
+    o << "\tnickname:" << info.nickname << std::endl;
+    o << "\tavatar_url:" << info.avatar_url << std::endl;
+    o << "\tarea_code:" << info.area_code << std::endl;
+    o << "\tarea_name:" << info.area_name << std::endl;
+    o << "\tninja_number:";
+    for (auto &i : info.ninja_number)
+      o << i << ' ';
+    o << std::endl;
+    o << "\trank:" << info.rank << std::endl;
+    o << "\tfashion_number:";
+    for (auto &i : info.fashion_number)
+      o << i << ' ';
+    o << std::endl;
+    o << "\tdynamic_avatar:" << std::endl;
+    o << "\t\tavatar_number:" << info.dynamic_avatar.avatar_number << std::endl;
+    o << "\t\tavatar_id:" << info.dynamic_avatar.avatar_id << std::endl;
     o << "is_temp:" << is_temp << std::endl;
     o.close();
   };
 };
 
 } // namespace ManagerData
+
+namespace Setting {
+struct Data {
+  std::string Export_Path;
+};
+} // namespace Setting

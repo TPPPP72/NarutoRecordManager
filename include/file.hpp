@@ -7,10 +7,10 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "setting.hpp"
 
 const std::string ADB_Path = ".\\bin\\adb.exe";
 const std::string TEMP_Path = ".\\temp\\";
-const std::string EXPORT_Path = ".\\export\\";
 
 namespace FileManager {
 
@@ -48,8 +48,8 @@ inline const bool is_local_file_exist(const std::string &path) {
 inline const void local_system_init() {
   if (_access(TEMP_Path.c_str(), F_OK) == -1)
     _mkdir(TEMP_Path.c_str());
-  if (_access(EXPORT_Path.c_str(), F_OK) == -1)
-    _mkdir(EXPORT_Path.c_str());
+  if (_access(Setting::GetData().Export_Path.c_str(), F_OK) == -1)
+    _mkdir(Setting::GetData().Export_Path.c_str());
 }
 
 inline const void local_system_clear() {
