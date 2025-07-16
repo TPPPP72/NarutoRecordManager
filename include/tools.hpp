@@ -3,6 +3,10 @@
 #include <string>
 #include <windows.h>
 #include <vector>
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
 
 inline std::string OctalStringToUTF8(const std::string& input) {
     std::string result;
@@ -42,3 +46,16 @@ inline std::string utf8_to_gbk(const std::string& utf8_str) {
     return std::string(gbk_str.data());
 }
 
+inline long long to_timestamp(const std::string& datetime_str) {
+    std::tm tm{};
+    std::istringstream ss(datetime_str);
+    ss >> std::get_time(&tm, "%Y_%m_%dT%H_%M_%S");
+    if (ss.fail()) {
+        return 0;
+    }
+    time_t timestamp = std::mktime(&tm);
+    if (timestamp == -1) {
+        return 0;
+    }
+    return static_cast<long long>(timestamp);
+}

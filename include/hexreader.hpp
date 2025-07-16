@@ -2,37 +2,47 @@
 
 #include "..\proto\record_part.pb.h"
 #include "..\proto\recordlist.pb.h"
-#include "codeconvert.hpp"
+#include "tools.hpp"
 #include "data.h"
 #include <fstream>
 #include <vector>
 
-inline std::vector<ManagerData::User_Data>
-Get_User_Datas(const std::string &path) {
+namespace hexreader {
+inline ManagerData::Record Get_Record(const std::string &path) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   record::Record loaded;
   std::ifstream ifs(path, std::ios::binary);
   loaded.ParseFromIstream(&ifs);
-  const record::Information &information = loaded.information();
-  const record::Information_Inner &inner = information.inner();
-  std::vector<record::User_Data> user_datas;
-  for (int i = 0; i < inner.player_size(); i++) {
-    const record::Player_Data &player = inner.player(i);
-    if (player.has_userdata()) {
-      user_datas.emplace_back(player.userdata());
+  // information
+  std::vector<ManagerData::Player_Data> players;
+  for (const auto &item : loaded.information().inner().player()) {
+    ManagerData::Game game;
+    for (const auto &ninja_item : item.userdata().game().ninja()) {
+      game.ninja.emplace_back(ManagerData::Ninja{
+          ninja_item.basic().ninja_id(),
+          ninja_item.basic().ninja_resource().fashion_resource()});
     }
+    ManagerData::Player_Data player{
+        item.pos1(),
+        item.pos2(),
+        {item.userdata().user_id(),
+         OctalStringToUTF8(item.userdata().nickname()),
+         item.userdata().level(),
+         item.userdata().score(),
+         game,
+         item.userdata().avatar_url(),
+         OctalStringToUTF8(item.userdata().area_name()),
+         item.userdata().private_().area_code(),
+         item.userdata().rank(),
+         {item.userdata().dynamic_avatar().avatar_number(),
+          item.userdata().dynamic_avatar().avatar_id()}}};
+    players.emplace_back(player);
   }
-  std::vector<ManagerData::User_Data> result;
-  for (const auto &i : user_datas) {
-    result.emplace_back(ManagerData::User_Data{
-        i.id(), OctalStringToUTF8(i.nickname()), i.level(), i.avatar_url()});
-  }
-  google::protobuf::ShutdownProtobufLibrary();
-  return result;
+  return {players, loaded.settle_information().inner().statu()};
 }
 
 inline std::vector<ManagerData::Player_Record>
-Get_Record_Datas(const std::string &path) {
+Get_Record_List(const std::string &path) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   recordlist::RecordList loaded;
   std::ifstream ifs(path, std::ios::binary);
@@ -65,3 +75,5 @@ Get_Record_Datas(const std::string &path) {
   google::protobuf::ShutdownProtobufLibrary();
   return result;
 }
+
+} // namespace hexreader

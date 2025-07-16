@@ -1,11 +1,15 @@
 #include "./include/adb.hpp"
 #include "./include/file.hpp"
-#include "include/data.h"
-#include "include/setting.hpp"
+#include "./include/data.h"
+#include "./include/setting.hpp"
+#include "./include/hexreader.hpp"
+#include "./include/hexwriter.hpp"
 #include "wx/dynarray.h"
 #include "wx/event.h"
 #include "wx/language.h"
+#include <wx/listctrl.h>
 #include "wx/msgdlg.h"
+#include "wx/msw/listctrl.h"
 #include "wx/string.h"
 #include <algorithm>
 #include <string>
@@ -32,14 +36,15 @@ public:
 private:
   std::vector<FileManager::FileList> lists;
   wxListBox *deviceList;
-  wxListBox *fileList;
+  wxListCtrl *fileList;
   void OnDeviceSelected(wxCommandEvent &event);
   void OnExit(wxCommandEvent &event);
   void OnAbout(wxCommandEvent &event);
+  void OnADBWirelessDebugHelper(wxCommandEvent &event);
   void OnSettingExportPath(wxCommandEvent &event);
   void OnImportFromComputer(wxCommandEvent &event);
   void OnRefresh(wxCommandEvent &event);
-  void OnFileSelected(wxCommandEvent &event);
+  void OnFileSelected(wxListEvent &event);
   void OnFileListRightClick(wxMouseEvent &event);
   void OnExport(wxCommandEvent &event);
   void OnDelete(wxCommandEvent &event);
@@ -65,6 +70,7 @@ MyFrame::MyFrame()
   SetIcon(wxICON(NarutoRecordManager));
   // 工具栏
   wxMenu *controlMenu = new wxMenu;
+  controlMenu->Append(wxID_ADD,wxString::FromUTF8("ADB无线调试辅助"));
   controlMenu->Append(wxID_REFRESH, wxString::FromUTF8("刷新\tF5"));
   controlMenu->Append(ID_Import, wxString::FromUTF8("从电脑导入"));
 
@@ -100,8 +106,13 @@ MyFrame::MyFrame()
   wxStaticText *fileLabel =
       new wxStaticText(this, wxID_ANY, wxString::FromUTF8("文件列表"),
                        wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
-  fileList = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0,
-                           nullptr, wxLB_MULTIPLE);
+  fileList = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+                              wxLC_REPORT);
+
+  fileList->InsertColumn(0, wxString::FromUTF8("文件名"), wxLIST_FORMAT_LEFT, 200);
+  fileList->InsertColumn(1, "1P", wxLIST_FORMAT_LEFT, 100);
+  fileList->InsertColumn(2, "2P", wxLIST_FORMAT_LEFT, 100);
+  fileList->InsertColumn(3, wxString::FromUTF8("胜负"), wxLIST_FORMAT_LEFT, 80);
 
   wxBoxSizer *rightSizer = new wxBoxSizer(wxVERTICAL);
   rightSizer->Add(fileLabel, 0, wxALIGN_CENTER_HORIZONTAL | wxTOP | wxBOTTOM,
@@ -115,8 +126,10 @@ MyFrame::MyFrame()
   Layout();
 
   deviceList->Bind(wxEVT_LISTBOX, &MyFrame::OnDeviceSelected, this);
-  fileList->Bind(wxEVT_LISTBOX, &MyFrame::OnFileSelected, this);
+  fileList->Bind(wxEVT_LIST_ITEM_SELECTED, &MyFrame::OnFileSelected, this);
+  fileList->Bind(wxEVT_LIST_ITEM_DESELECTED, &MyFrame::OnFileSelected, this);
   fileList->Bind(wxEVT_RIGHT_DOWN, &MyFrame::OnFileListRightClick, this);
+  Bind(wxEVT_MENU, &MyFrame::OnADBWirelessDebugHelper,this,wxID_ADD);
   Bind(wxEVT_MENU, &MyFrame::OnSettingExportPath, this, ID_Setting);
   Bind(wxEVT_MENU, &MyFrame::OnAbout, this, wxID_ABOUT);
   Bind(wxEVT_MENU, &MyFrame::OnImportFromComputer, this, ID_Import);
@@ -134,7 +147,9 @@ MyFrame::MyFrame()
   SetStatusText(wxString::FromUTF8("初始化完成！"));
 }
 
-void MyFrame::OnExit(wxCommandEvent &event) { Close(true); }
+void MyFrame::OnExit(wxCommandEvent &event) { 
+  Close(true); 
+}
 
 void MyFrame::OnAbout(wxCommandEvent &event) {
   wxMessageBox(
@@ -144,6 +159,10 @@ void MyFrame::OnAbout(wxCommandEvent &event) {
                          "358783831\nGithub:https://github.com/TPPPP72/"
                          "NarutoRecordManager\n\n版本号:0.2"),
       wxString::FromUTF8("关于该软件"), wxOK | wxICON_INFORMATION);
+}
+
+void MyFrame::OnADBWirelessDebugHelper(wxCommandEvent &event){
+  
 }
 
 void MyFrame::OnSettingExportPath(wxCommandEvent &event) {
@@ -162,8 +181,13 @@ void MyFrame::OnSettingExportPath(wxCommandEvent &event) {
 void MyFrame::OnRefresh(wxCommandEvent &event) {
   deviceList->SetSelection(wxNOT_FOUND);
   deviceList->Clear();
-  fileList->SetSelection(wxNOT_FOUND);
-  fileList->Clear();
+  long item = -1;
+  while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL,
+                                       wxLIST_STATE_SELECTED)) != -1) {
+    fileList->SetItemState(item, 0, wxLIST_STATE_SELECTED);
+  }
+
+  fileList->DeleteAllItems();
   lists = init();
 
   for (const auto &item : lists) {
@@ -197,7 +221,7 @@ void MyFrame::OnImportFromComputer(wxCommandEvent &event) {
               FileManager::GetListByDeviceID(lists, selected_device_id),
               path.ToStdString())) {
         ++cnt;
-        fileList->Append(path.substr(path.rfind("\\") + 1));
+        fileList->InsertItem(fileList->GetItemCount(), wxString(path.substr(path.rfind("\\") + 1)));
       }
     }
     SetStatusText(
@@ -211,26 +235,32 @@ void MyFrame::OnImportFromComputer(wxCommandEvent &event) {
 }
 
 void MyFrame::OnDeviceSelected(wxCommandEvent &event) {
-  fileList->SetSelection(wxNOT_FOUND);
-  fileList->Clear();
+  long item = -1;
+  while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL,
+                                       wxLIST_STATE_SELECTED)) != -1) {
+    fileList->SetItemState(item, 0, wxLIST_STATE_SELECTED);
+  }
+
+  fileList->DeleteAllItems();
   std::string selected_device_id =
       deviceList->GetString(event.GetSelection()).ToStdString();
   SetStatusText(wxString::FromUTF8("选择设备:" + selected_device_id));
   auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
   for (const auto &item : list.record) {
-    fileList->Append(item);
+    fileList->InsertItem(fileList->GetItemCount(), wxString(item));
   }
   for (const auto &item : list.recordlist) {
-    fileList->Append(item);
+    fileList->InsertItem(fileList->GetItemCount(), wxString(item));
   }
 }
 
-void MyFrame::OnFileSelected(wxCommandEvent &event) {
-  int index = event.GetSelection();
-  wxString selected_file = fileList->GetString(index);
-  wxArrayInt selections;
-  fileList->GetSelections(selections);
-  if (selections.Index(index) != wxNOT_FOUND) {
+void MyFrame::OnFileSelected(wxListEvent &event) {
+  int index = event.GetIndex();
+  if (index == wxNOT_FOUND)
+    return;
+  wxString selected_file = fileList->GetItemText(index);
+  long state = fileList->GetItemState(index, wxLIST_STATE_SELECTED);
+  if (state & wxLIST_STATE_SELECTED) {
     SetStatusText(wxString::FromUTF8("选择文件:" + selected_file));
   } else {
     SetStatusText(wxString::FromUTF8("取消选择:" + selected_file));
@@ -242,10 +272,11 @@ void MyFrame::OnFileListRightClick(wxMouseEvent &event) {
   wxPoint pos_on_screen = fileList->ClientToScreen(pos_in_list);
   wxPoint pos_in_frame = this->ScreenToClient(pos_on_screen);
 
-  int file_list_index = fileList->HitTest(pos_in_list);
+  int flag=0;
+  long file_list_index = fileList->HitTest(pos_in_list,flag);
   if (file_list_index != wxNOT_FOUND) {
-    fileList->SetSelection(file_list_index);
-    SetStatusText(wxString::FromUTF8("选择文件:" + fileList->GetString(file_list_index)));
+        fileList->SetItemState(file_list_index, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+        SetStatusText(wxString::FromUTF8("选择文件:" + fileList->GetItemText(file_list_index)));
   }
   wxMenu *menu=new wxMenu;
   menu->Append(ID_Export, wxString::FromUTF8("导出到电脑"));
@@ -273,11 +304,10 @@ void MyFrame::OnFileListRightClick(wxMouseEvent &event) {
 }
 
 void MyFrame::OnExport(wxCommandEvent &event) {
-  wxArrayInt selections;
-  fileList->GetSelections(selections);
+  long item = -1;
   int cnt = 0;
-  for (auto &i : selections) {
-    std::string file = fileList->GetString(i).ToStdString();
+  while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != -1) {
+    std::string file = fileList->GetItemText(item, 0).ToStdString();
     std::string selected_device_id =
         deviceList->GetString(deviceList->GetSelection()).ToStdString();
     SetStatusText(wxString::FromUTF8("正在导出文件:" + file));
@@ -289,16 +319,15 @@ void MyFrame::OnExport(wxCommandEvent &event) {
   }
   SetStatusText(
       wxString::FromUTF8("导出完成！ " + std::to_string(cnt) + "成功 " +
-                         std::to_string(selections.size() - cnt) + "失败"));
+                         std::to_string(fileList->GetSelectedItemCount() - cnt) + "失败"));
 }
 
 void MyFrame::OnDelete(wxCommandEvent &event) {
-  wxArrayInt selections;
-  fileList->GetSelections(selections);
+  long item = -1;
   int cnt = 0;
   std::vector<std::string> DelSuc;
-  for (auto &item : selections) {
-    std::string file = fileList->GetString(item).ToStdString();
+  while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != -1) {
+    std::string file = fileList->GetItemText(item, 0).ToStdString();
     std::string selected_device_id =
         deviceList->GetString(deviceList->GetSelection()).ToStdString();
     SetStatusText(wxString::FromUTF8("正在删除文件:" + file));
@@ -310,19 +339,25 @@ void MyFrame::OnDelete(wxCommandEvent &event) {
     // 进度显示待做
   }
   for (const auto &item : DelSuc) {
-    fileList->Delete(fileList->FindString(item));
+    long itemIndex = -1;
+    while ((itemIndex = fileList->GetNextItem(itemIndex)) != -1) {
+      wxString filename = fileList->GetItemText(itemIndex, 0); // 第0列是文件名
+      if (filename == wxString(item)) {
+        fileList->DeleteItem(itemIndex);
+        break;
+      }
+    }
   }
   SetStatusText(
       wxString::FromUTF8("删除完成！ " + std::to_string(cnt) + "成功 " +
-                         std::to_string(selections.size() - cnt) + "失败"));
+                         std::to_string(fileList->GetSelectedItemCount() - cnt) + "失败"));
 }
 
 void MyFrame::OnSendToDynamicDevice(wxCommandEvent &event) {
-  wxArrayInt selections;
-  fileList->GetSelections(selections);
+  long item = -1;
   int cnt = 0;
-  for (auto &i : selections) {
-    std::string file = fileList->GetString(i).ToStdString();
+  while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != -1) {
+    std::string file = fileList->GetItemText(item, 0).ToStdString();
     std::string selected_device_id =
         deviceList->GetString(deviceList->GetSelection()).ToStdString();
     SetStatusText(wxString::FromUTF8("正在发送文件:" + file));
@@ -334,7 +369,7 @@ void MyFrame::OnSendToDynamicDevice(wxCommandEvent &event) {
   }
   SetStatusText(
       wxString::FromUTF8("发送完成！ " + std::to_string(cnt) + "成功 " +
-                         std::to_string(selections.size() - cnt) + "失败"));
+                         std::to_string(fileList->GetSelectedItemCount() - cnt) + "失败"));
   FileManager::local_system_clear();
 }
 
