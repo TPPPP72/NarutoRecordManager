@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "codeconvert.hpp"
 #include "setting.hpp"
 
 const std::string ADB_Path = ".\\bin\\adb.exe";
@@ -48,8 +49,8 @@ inline const bool is_local_file_exist(const std::string &path) {
 inline const void local_system_init() {
   if (_access(TEMP_Path.c_str(), F_OK) == -1)
     _mkdir(TEMP_Path.c_str());
-  if (_access(Setting::GetData().Export_Path.c_str(), F_OK) == -1)
-    _mkdir(Setting::GetData().Export_Path.c_str());
+  if (_access(utf8_to_gbk(Setting::GetData().Export_Path).c_str(), F_OK) == -1)
+    _mkdir(utf8_to_gbk(Setting::GetData().Export_Path).c_str());
 }
 
 inline const void local_system_clear() {
