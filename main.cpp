@@ -1,20 +1,21 @@
 #include "./include/adb.hpp"
-#include "./include/file.hpp"
 #include "./include/data.h"
-#include "./include/setting.hpp"
+#include "./include/file.hpp"
 #include "./include/hexreader.hpp"
 #include "./include/hexwriter.hpp"
+#include "./include/setting.hpp"
 #include "wx/dynarray.h"
 #include "wx/event.h"
 #include "wx/language.h"
-#include <wx/listctrl.h>
 #include "wx/msgdlg.h"
-#include "wx/msw/listctrl.h"
 #include "wx/string.h"
 #include <algorithm>
+#include <cstdio>
 #include <string>
 #include <wx/filename.h>
+#include <wx/listctrl.h>
 #include <wx/wxprec.h>
+
 
 #ifndef WX_PRECOMP
 #include <wx/wx.h>
@@ -70,7 +71,7 @@ MyFrame::MyFrame()
   SetIcon(wxICON(NarutoRecordManager));
   // 工具栏
   wxMenu *controlMenu = new wxMenu;
-  controlMenu->Append(wxID_ADD,wxString::FromUTF8("ADB无线调试辅助"));
+  controlMenu->Append(wxID_ADD, wxString::FromUTF8("ADB无线调试辅助"));
   controlMenu->Append(wxID_REFRESH, wxString::FromUTF8("刷新\tF5"));
   controlMenu->Append(ID_Import, wxString::FromUTF8("从电脑导入"));
 
@@ -107,13 +108,15 @@ MyFrame::MyFrame()
       new wxStaticText(this, wxID_ANY, wxString::FromUTF8("文件列表"),
                        wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
   fileList = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-                              wxLC_REPORT);
+                            wxLC_REPORT);
 
-  fileList->InsertColumn(0, wxString::FromUTF8("文件名"), wxLIST_FORMAT_LEFT, 150);
-  fileList->InsertColumn(1, "1P", wxLIST_FORMAT_LEFT, 80);
-  fileList->InsertColumn(2, "2P", wxLIST_FORMAT_LEFT, 80);
+  fileList->InsertColumn(0, wxString::FromUTF8("文件名"), wxLIST_FORMAT_LEFT,
+                         140);
+  fileList->InsertColumn(1, "1P", wxLIST_FORMAT_LEFT, 90);
+  fileList->InsertColumn(2, "2P", wxLIST_FORMAT_LEFT, 90);
   fileList->InsertColumn(3, wxString::FromUTF8("胜负"), wxLIST_FORMAT_LEFT, 50);
-  fileList->InsertColumn(4, wxString::FromUTF8("所属权"), wxLIST_FORMAT_LEFT, 150);
+  fileList->InsertColumn(4, wxString::FromUTF8("所属权"), wxLIST_FORMAT_LEFT,
+                         150);
 
   wxBoxSizer *rightSizer = new wxBoxSizer(wxVERTICAL);
   rightSizer->Add(fileLabel, 0, wxALIGN_CENTER_HORIZONTAL | wxTOP | wxBOTTOM,
@@ -130,7 +133,7 @@ MyFrame::MyFrame()
   fileList->Bind(wxEVT_LIST_ITEM_SELECTED, &MyFrame::OnFileSelected, this);
   fileList->Bind(wxEVT_LIST_ITEM_DESELECTED, &MyFrame::OnFileSelected, this);
   fileList->Bind(wxEVT_RIGHT_DOWN, &MyFrame::OnFileListRightClick, this);
-  Bind(wxEVT_MENU, &MyFrame::OnADBWirelessDebugHelper,this,wxID_ADD);
+  Bind(wxEVT_MENU, &MyFrame::OnADBWirelessDebugHelper, this, wxID_ADD);
   Bind(wxEVT_MENU, &MyFrame::OnSettingExportPath, this, ID_Setting);
   Bind(wxEVT_MENU, &MyFrame::OnAbout, this, wxID_ABOUT);
   Bind(wxEVT_MENU, &MyFrame::OnImportFromComputer, this, ID_Import);
@@ -148,9 +151,7 @@ MyFrame::MyFrame()
   SetStatusText(wxString::FromUTF8("初始化完成！"));
 }
 
-void MyFrame::OnExit(wxCommandEvent &event) { 
-  Close(true); 
-}
+void MyFrame::OnExit(wxCommandEvent &event) { Close(true); }
 
 void MyFrame::OnAbout(wxCommandEvent &event) {
   wxMessageBox(
@@ -162,9 +163,7 @@ void MyFrame::OnAbout(wxCommandEvent &event) {
       wxString::FromUTF8("关于该软件"), wxOK | wxICON_INFORMATION);
 }
 
-void MyFrame::OnADBWirelessDebugHelper(wxCommandEvent &event){
-  
-}
+void MyFrame::OnADBWirelessDebugHelper(wxCommandEvent &event) {}
 
 void MyFrame::OnSettingExportPath(wxCommandEvent &event) {
   wxDirDialog dirDialog(this, wxString::FromUTF8("选择导出的文件夹"), "",
@@ -222,7 +221,8 @@ void MyFrame::OnImportFromComputer(wxCommandEvent &event) {
               FileManager::GetListByDeviceID(lists, selected_device_id),
               path.ToStdString())) {
         ++cnt;
-        fileList->InsertItem(fileList->GetItemCount(), wxString(path.substr(path.rfind("\\") + 1)));
+        fileList->InsertItem(fileList->GetItemCount(),
+                             wxString(path.substr(path.rfind("\\") + 1)));
       }
     }
     SetStatusText(
@@ -247,12 +247,36 @@ void MyFrame::OnDeviceSelected(wxCommandEvent &event) {
       deviceList->GetString(event.GetSelection()).ToStdString();
   SetStatusText(wxString::FromUTF8("选择设备:" + selected_device_id));
   auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
-  for (const auto &item : list.record) {
-    fileList->InsertItem(fileList->GetItemCount(), wxString(item));
-  }
+  SetStatusText(wxString::FromUTF8("正在构建文件列表中......" + selected_device_id));
+  std::map<std::string,std::string> mapping;
   for (const auto &item : list.recordlist) {
-    fileList->InsertItem(fileList->GetItemCount(), wxString(item));
+    ADB::PullRemoteFile(list, item,TEMP_Path);
+    auto recordlist = hexreader::Get_Record_List(TEMP_Path+item);
+    for(const auto &recorditem:recordlist){
+      mapping[recorditem.datetime]=item.substr(item.rfind("_")+1);
+    }
+    FileManager::local_system_clear();
   }
+  for (const auto &item : list.record) {
+    ADB::PullRemoteFile(list, item,TEMP_Path);
+    auto record = hexreader::Get_Record(TEMP_Path+item);
+    long index = fileList->InsertItem(fileList->GetItemCount(), item);
+    int cnt = 0;
+    for(const auto &playeritem:record.information.inner.players){
+      fileList->SetItem(index,++cnt,wxString::FromUTF8(playeritem.userdata.nickname));
+    }
+    if(record.settle_information.inner.statu==1)
+    fileList->SetItem(index,3,wxString::FromUTF8("平"));
+    else if(record.settle_information.inner.statu==2)
+    fileList->SetItem(index,3,wxString::FromUTF8("负"));
+    else
+    fileList->SetItem(index,3,wxString::FromUTF8("胜"));
+    if(mapping.find(item)==mapping.end())
+      fileList->SetItem(index,4,wxString::FromUTF8("无"));
+    else
+      fileList->SetItem(index,4,mapping[item]);
+  }
+  SetStatusText(wxString::FromUTF8("文件列表构建完毕！" + selected_device_id));
 }
 
 void MyFrame::OnFileSelected(wxListEvent &event) {
@@ -273,13 +297,15 @@ void MyFrame::OnFileListRightClick(wxMouseEvent &event) {
   wxPoint pos_on_screen = fileList->ClientToScreen(pos_in_list);
   wxPoint pos_in_frame = this->ScreenToClient(pos_on_screen);
 
-  int flag=0;
-  long file_list_index = fileList->HitTest(pos_in_list,flag);
+  int flag = 0;
+  long file_list_index = fileList->HitTest(pos_in_list, flag);
   if (file_list_index != wxNOT_FOUND) {
-        fileList->SetItemState(file_list_index, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
-        SetStatusText(wxString::FromUTF8("选择文件:" + fileList->GetItemText(file_list_index)));
+    fileList->SetItemState(file_list_index, wxLIST_STATE_SELECTED,
+                           wxLIST_STATE_SELECTED);
+    SetStatusText(wxString::FromUTF8("选择文件:" +
+                                     fileList->GetItemText(file_list_index)));
   }
-  wxMenu *menu=new wxMenu;
+  wxMenu *menu = new wxMenu;
   menu->Append(ID_Export, wxString::FromUTF8("导出到电脑"));
 
   if (lists.size() >= 2) {
@@ -307,7 +333,8 @@ void MyFrame::OnFileListRightClick(wxMouseEvent &event) {
 void MyFrame::OnExport(wxCommandEvent &event) {
   long item = -1;
   int cnt = 0;
-  while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != -1) {
+  while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL,
+                                       wxLIST_STATE_SELECTED)) != -1) {
     std::string file = fileList->GetItemText(item, 0).ToStdString();
     std::string selected_device_id =
         deviceList->GetString(deviceList->GetSelection()).ToStdString();
@@ -318,16 +345,17 @@ void MyFrame::OnExport(wxCommandEvent &event) {
       ++cnt;
     // 进度显示待做
   }
-  SetStatusText(
-      wxString::FromUTF8("导出完成！ " + std::to_string(cnt) + "成功 " +
-                         std::to_string(fileList->GetSelectedItemCount() - cnt) + "失败"));
+  SetStatusText(wxString::FromUTF8(
+      "导出完成！ " + std::to_string(cnt) + "成功 " +
+      std::to_string(fileList->GetSelectedItemCount() - cnt) + "失败"));
 }
 
 void MyFrame::OnDelete(wxCommandEvent &event) {
   long item = -1;
   int cnt = 0;
   std::vector<std::string> DelSuc;
-  while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != -1) {
+  while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL,
+                                       wxLIST_STATE_SELECTED)) != -1) {
     std::string file = fileList->GetItemText(item, 0).ToStdString();
     std::string selected_device_id =
         deviceList->GetString(deviceList->GetSelection()).ToStdString();
@@ -342,22 +370,23 @@ void MyFrame::OnDelete(wxCommandEvent &event) {
   for (const auto &item : DelSuc) {
     long itemIndex = -1;
     while ((itemIndex = fileList->GetNextItem(itemIndex)) != -1) {
-      wxString filename = fileList->GetItemText(itemIndex, 0); // 第0列是文件名
+      wxString filename = fileList->GetItemText(itemIndex, 0);
       if (filename == wxString(item)) {
         fileList->DeleteItem(itemIndex);
         break;
       }
     }
   }
-  SetStatusText(
-      wxString::FromUTF8("删除完成！ " + std::to_string(cnt) + "成功 " +
-                         std::to_string(fileList->GetSelectedItemCount() - cnt) + "失败"));
+  SetStatusText(wxString::FromUTF8(
+      "删除完成！ " + std::to_string(cnt) + "成功 " +
+      std::to_string(fileList->GetSelectedItemCount() - cnt) + "失败"));
 }
 
 void MyFrame::OnSendToDynamicDevice(wxCommandEvent &event) {
   long item = -1;
   int cnt = 0;
-  while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != -1) {
+  while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL,
+                                       wxLIST_STATE_SELECTED)) != -1) {
     std::string file = fileList->GetItemText(item, 0).ToStdString();
     std::string selected_device_id =
         deviceList->GetString(deviceList->GetSelection()).ToStdString();
@@ -368,9 +397,9 @@ void MyFrame::OnSendToDynamicDevice(wxCommandEvent &event) {
       ++cnt;
     // 进度显示待做
   }
-  SetStatusText(
-      wxString::FromUTF8("发送完成！ " + std::to_string(cnt) + "成功 " +
-                         std::to_string(fileList->GetSelectedItemCount() - cnt) + "失败"));
+  SetStatusText(wxString::FromUTF8(
+      "发送完成！ " + std::to_string(cnt) + "成功 " +
+      std::to_string(fileList->GetSelectedItemCount() - cnt) + "失败"));
   FileManager::local_system_clear();
 }
 
