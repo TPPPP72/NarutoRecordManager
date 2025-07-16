@@ -109,10 +109,11 @@ MyFrame::MyFrame()
   fileList = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
                               wxLC_REPORT);
 
-  fileList->InsertColumn(0, wxString::FromUTF8("文件名"), wxLIST_FORMAT_LEFT, 200);
-  fileList->InsertColumn(1, "1P", wxLIST_FORMAT_LEFT, 100);
-  fileList->InsertColumn(2, "2P", wxLIST_FORMAT_LEFT, 100);
-  fileList->InsertColumn(3, wxString::FromUTF8("胜负"), wxLIST_FORMAT_LEFT, 80);
+  fileList->InsertColumn(0, wxString::FromUTF8("文件名"), wxLIST_FORMAT_LEFT, 150);
+  fileList->InsertColumn(1, "1P", wxLIST_FORMAT_LEFT, 80);
+  fileList->InsertColumn(2, "2P", wxLIST_FORMAT_LEFT, 80);
+  fileList->InsertColumn(3, wxString::FromUTF8("胜负"), wxLIST_FORMAT_LEFT, 50);
+  fileList->InsertColumn(4, wxString::FromUTF8("所属权"), wxLIST_FORMAT_LEFT, 150);
 
   wxBoxSizer *rightSizer = new wxBoxSizer(wxVERTICAL);
   rightSizer->Add(fileLabel, 0, wxALIGN_CENTER_HORIZONTAL | wxTOP | wxBOTTOM,
