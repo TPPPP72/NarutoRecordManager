@@ -58,6 +58,12 @@ inline const void local_system_clear() {
     std::filesystem::remove_all(entry.path());
 }
 
+inline std::string Get_Local_Device_TEMP_Path(const std::string &device_id){
+  if(_access((TEMP_Path+device_id).c_str(), F_OK)==-1)
+    _mkdir((TEMP_Path+device_id).c_str());
+  return TEMP_Path+device_id;
+}
+
 inline FileList& GetListByDeviceID(std::vector<FileList> &lists,
                                   const std::string &id) {
   for (auto &item : lists) {
