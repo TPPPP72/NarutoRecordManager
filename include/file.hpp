@@ -149,4 +149,12 @@ inline FileList &GetListByDeviceID(std::vector<FileList> &lists,
   throw std::runtime_error("Device_ID Not Found");
 }
 
+inline bool Copy(const FileManager::FileList &list, const std::string &file,
+                     const std::string &path) {
+  std::string src = Get_Local_Device_TEMP_Path(list.device_id) + file;
+  std::string dst = path + file;
+  bool result = CopyFileA(src.c_str(), dst.c_str(), false);
+  return result != 0;
+}
+
 } // namespace FileManager

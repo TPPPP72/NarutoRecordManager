@@ -159,9 +159,7 @@ MyFrame::MyFrame()
   SetStatusText(wxString::FromUTF8("初始化完成！"));
 }
 
-void MyFrame::OnExit(wxCommandEvent &event) {
-  Close(true);
-}
+void MyFrame::OnExit(wxCommandEvent &event) { Close(true); }
 
 void MyFrame::OnAbout(wxCommandEvent &event) {
   wxMessageBox(
@@ -279,18 +277,110 @@ void MyFrame::OnDeviceSelected(wxCommandEvent &event) {
                        .get<std::vector<FileManager::FileData>>();
 
       int total = datas.size();
-      wxTheApp->CallAfter([this, datas = std::move(datas), total]() {
-        int cnt = 0;
-        for (const auto &item : datas) {
-          long index = fileList->InsertItem(fileList->GetItemCount(),wxString::FromUTF8(item.file));
-          fileList->SetItem(index, 1, wxString::FromUTF8(item.data.p1));
-          fileList->SetItem(index, 2, wxString::FromUTF8(item.data.p2));
-          fileList->SetItem(index, 3, wxString::FromUTF8(item.data.statu));
-          fileList->SetItem(index, 4, wxString::FromUTF8(item.data.belong));
-          std::string notify = std::format("获取到已构建的文件列表，加载中...... 当前进度:{:.1f}%",static_cast<double>(++cnt) / total * 100);
-          SetStatusText(wxString::FromUTF8(notify));
-        }
-      });
+      if (total == FileManager::GetListByDeviceID(lists, selected_device_id)
+                       .record.size()) {
+        wxTheApp->CallAfter([this, datas = std::move(datas), total]() {
+          int cnt = 0;
+          for (const auto &item : datas) {
+            long index = fileList->InsertItem(fileList->GetItemCount(),
+                                              wxString::FromUTF8(item.file));
+            fileList->SetItem(index, 1, wxString::FromUTF8(item.data.p1));
+            fileList->SetItem(index, 2, wxString::FromUTF8(item.data.p2));
+            fileList->SetItem(index, 3, wxString::FromUTF8(item.data.statu));
+            fileList->SetItem(index, 4, wxString::FromUTF8(item.data.belong));
+            std::string notify = std::format(
+                "获取到已构建的文件列表，加载中...... 当前进度:{:.1f}%",
+                static_cast<double>(++cnt) / total * 100);
+            SetStatusText(wxString::FromUTF8(notify));
+          }
+        });
+      } else {
+        std::thread([=, this]() {
+          auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
+          std::map<std::string, std::string> mapping;
+          int sum = list.recordlist.size() + list.record.size();
+          int cnt = 0;
+
+          std::vector<FileManager::FileData> datas;
+
+          for (const auto &item : list.recordlist) {
+            std::string temp_path =
+                FileManager::Get_Local_Device_TEMP_Path(list.device_id);
+            ADB::PullRemoteFile(list, item, temp_path);
+            auto recordlist = hexreader::Get_Record_List(temp_path + item);
+
+            for (const auto &recorditem : recordlist) {
+              mapping[recorditem.datetime] = item.substr(item.rfind("_") + 1);
+            }
+
+            FileManager::local_system_clear(list.device_id);
+
+            std::string notify =
+                std::format("正在构建文件列表中...... 当前进度:{:.1f}%",
+                            static_cast<double>(++cnt) / sum * 100);
+            wxTheApp->CallAfter(
+                [=, this]() { SetStatusText(wxString::FromUTF8(notify)); });
+          }
+
+          for (const auto &item : list.record) {
+            std::string temp_path =
+                FileManager::Get_Local_Device_TEMP_Path(list.device_id);
+            ADB::PullRemoteFile(list, item, temp_path);
+            auto record = hexreader::Get_Record(temp_path + item);
+            FileManager::FileData filedata;
+            filedata.file = item;
+            int playerIndex = 0;
+            for (const auto &playeritem : record.information.inner.players) {
+              if (playerIndex == 0)
+                filedata.data.p1 = playeritem.userdata.nickname;
+              else if (playerIndex == 1)
+                filedata.data.p2 = playeritem.userdata.nickname;
+              ++playerIndex;
+            }
+
+            int result = record.settle_information.inner.statu;
+            if (result == 1)
+              filedata.data.statu = "平";
+            else if (result == 2)
+              filedata.data.statu = "负";
+            else
+              filedata.data.statu = "胜";
+
+            if (mapping.find(item) != mapping.end())
+              filedata.data.belong = mapping.at(item);
+            else
+              filedata.data.belong = "无";
+
+            datas.emplace_back(std::move(filedata));
+
+            std::string notify =
+                std::format("正在构建文件列表中...... 当前进度:{:.1f}%",
+                            static_cast<double>(++cnt) / sum * 100);
+            wxTheApp->CallAfter(
+                [=, this]() { SetStatusText(wxString::FromUTF8(notify)); });
+          }
+          {
+            std::ofstream output(
+                FileManager::Get_Local_Device_MAP_TEMP(selected_device_id));
+            nlohmann::json j = datas;
+            output << j.dump(4);
+            output.close();
+          }
+          wxTheApp->CallAfter([this, datas = std::move(datas)]() {
+            for (const auto &filedata : datas) {
+              long index = fileList->InsertItem(
+                  fileList->GetItemCount(), wxString::FromUTF8(filedata.file));
+              fileList->SetItem(index, 1, wxString::FromUTF8(filedata.data.p1));
+              fileList->SetItem(index, 2, wxString::FromUTF8(filedata.data.p2));
+              fileList->SetItem(index, 3,
+                                wxString::FromUTF8(filedata.data.statu));
+              fileList->SetItem(index, 4,
+                                wxString::FromUTF8(filedata.data.belong));
+            }
+            SetStatusText(wxString::FromUTF8("文件列表构建完毕！"));
+          });
+        }).detach();
+      }
     }).detach();
     return;
   }
@@ -303,76 +393,80 @@ void MyFrame::OnDeviceSelected(wxCommandEvent &event) {
     std::vector<FileManager::FileData> datas;
 
     for (const auto &item : list.recordlist) {
-        std::string temp_path = FileManager::Get_Local_Device_TEMP_Path(list.device_id);
-        ADB::PullRemoteFile(list, item, temp_path);
-        auto recordlist = hexreader::Get_Record_List(temp_path + item);
+      std::string temp_path =
+          FileManager::Get_Local_Device_TEMP_Path(list.device_id);
+      ADB::PullRemoteFile(list, item, temp_path);
+      auto recordlist = hexreader::Get_Record_List(temp_path + item);
 
-        for (const auto &recorditem : recordlist) {
-            mapping[recorditem.datetime] = item.substr(item.rfind("_") + 1);
-        }
+      for (const auto &recorditem : recordlist) {
+        mapping[recorditem.datetime] = item.substr(item.rfind("_") + 1);
+      }
 
-        FileManager::local_system_clear(list.device_id);
+      FileManager::local_system_clear(list.device_id);
 
-        std::string notify = std::format("正在构建文件列表中...... 当前进度:{:.1f}%",
-                                         static_cast<double>(++cnt) / sum * 100);
-        wxTheApp->CallAfter([=, this]() {
-            SetStatusText(wxString::FromUTF8(notify));
-        });
+      std::string notify =
+          std::format("正在构建文件列表中...... 当前进度:{:.1f}%",
+                      static_cast<double>(++cnt) / sum * 100);
+      wxTheApp->CallAfter(
+          [=, this]() { SetStatusText(wxString::FromUTF8(notify)); });
     }
 
     for (const auto &item : list.record) {
-        std::string temp_path = FileManager::Get_Local_Device_TEMP_Path(list.device_id);
-        ADB::PullRemoteFile(list, item, temp_path);
-        auto record = hexreader::Get_Record(temp_path + item);
-        FileManager::FileData filedata;
-        filedata.file = item;
-        int playerIndex = 0;
-        for (const auto &playeritem : record.information.inner.players) {
-            if (playerIndex == 0)
-                filedata.data.p1 = playeritem.userdata.nickname;
-            else if (playerIndex == 1)
-                filedata.data.p2 = playeritem.userdata.nickname;
-            ++playerIndex;
-        }
+      std::string temp_path =
+          FileManager::Get_Local_Device_TEMP_Path(list.device_id);
+      ADB::PullRemoteFile(list, item, temp_path);
+      auto record = hexreader::Get_Record(temp_path + item);
+      FileManager::FileData filedata;
+      filedata.file = item;
+      int playerIndex = 0;
+      for (const auto &playeritem : record.information.inner.players) {
+        if (playerIndex == 0)
+          filedata.data.p1 = playeritem.userdata.nickname;
+        else if (playerIndex == 1)
+          filedata.data.p2 = playeritem.userdata.nickname;
+        ++playerIndex;
+      }
 
-        int result = record.settle_information.inner.statu;
-        if (result == 1)
-            filedata.data.statu = "平";
-        else if (result == 2)
-            filedata.data.statu = "负";
-        else
-            filedata.data.statu = "胜";
+      int result = record.settle_information.inner.statu;
+      if (result == 1)
+        filedata.data.statu = "平";
+      else if (result == 2)
+        filedata.data.statu = "负";
+      else
+        filedata.data.statu = "胜";
 
-        if (mapping.find(item) != mapping.end())
-            filedata.data.belong = mapping.at(item);
-        else
-            filedata.data.belong = "无";
+      if (mapping.find(item) != mapping.end())
+        filedata.data.belong = mapping.at(item);
+      else
+        filedata.data.belong = "无";
 
-        datas.emplace_back(std::move(filedata));
+      datas.emplace_back(std::move(filedata));
 
-        std::string notify = std::format("正在构建文件列表中...... 当前进度:{:.1f}%",
-                                         static_cast<double>(++cnt) / sum * 100);
-        wxTheApp->CallAfter([=, this]() {
-            SetStatusText(wxString::FromUTF8(notify));
-        });
+      std::string notify =
+          std::format("正在构建文件列表中...... 当前进度:{:.1f}%",
+                      static_cast<double>(++cnt) / sum * 100);
+      wxTheApp->CallAfter(
+          [=, this]() { SetStatusText(wxString::FromUTF8(notify)); });
     }
     {
-        std::ofstream output(FileManager::Get_Local_Device_MAP_TEMP(selected_device_id));
-        nlohmann::json j = datas;
-        output << j.dump(4);
-        output.close();
+      std::ofstream output(
+          FileManager::Get_Local_Device_MAP_TEMP(selected_device_id));
+      nlohmann::json j = datas;
+      output << j.dump(4);
+      output.close();
     }
     wxTheApp->CallAfter([this, datas = std::move(datas)]() {
-        for (const auto &filedata : datas) {
-            long index = fileList->InsertItem(fileList->GetItemCount(), wxString::FromUTF8(filedata.file));
-            fileList->SetItem(index, 1, wxString::FromUTF8(filedata.data.p1));
-            fileList->SetItem(index, 2, wxString::FromUTF8(filedata.data.p2));
-            fileList->SetItem(index, 3, wxString::FromUTF8(filedata.data.statu));
-            fileList->SetItem(index, 4, wxString::FromUTF8(filedata.data.belong));
-        }
-        SetStatusText(wxString::FromUTF8("文件列表构建完毕！"));
+      for (const auto &filedata : datas) {
+        long index = fileList->InsertItem(fileList->GetItemCount(),
+                                          wxString::FromUTF8(filedata.file));
+        fileList->SetItem(index, 1, wxString::FromUTF8(filedata.data.p1));
+        fileList->SetItem(index, 2, wxString::FromUTF8(filedata.data.p2));
+        fileList->SetItem(index, 3, wxString::FromUTF8(filedata.data.statu));
+        fileList->SetItem(index, 4, wxString::FromUTF8(filedata.data.belong));
+      }
+      SetStatusText(wxString::FromUTF8("文件列表构建完毕！"));
     });
-}).detach();
+  }).detach();
 }
 
 void MyFrame::OnFileSelected(wxListEvent &event) {
@@ -457,7 +551,7 @@ void MyFrame::OnExport(wxCommandEvent &event) {
         SetStatusText(wxString::FromUTF8(notify));
       });
 
-      if (ADB::PullRemoteFile(list, *file_ptr, utf8_to_gbk(export_path)))
+      if (FileManager::Copy(list, *file_ptr, utf8_to_gbk(export_path)))
         ++success_cnt;
     }
 
@@ -551,11 +645,8 @@ void MyFrame::OnSendToDynamicDevice(wxCommandEvent &event) {
                         static_cast<double>(success_cnt) / total * 100);
         SetStatusText(wxString::FromUTF8(notify));
       });
-
-      if (ADB::PullRemoteFile(
-              FileManager::GetListByDeviceID(lists, selected_device_id), file,
-              FileManager::Get_Local_Device_TEMP_Path(list.device_id)) &&
-          ADB::PushRemoteFile(lists[event.GetId() - 2000], file))
+      if (ADB::PushRemoteFile(lists[event.GetId() - 2000], list.device_id,
+                              *file_ptr))
         ++success_cnt;
     }
 

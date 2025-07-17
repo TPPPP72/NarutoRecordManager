@@ -92,9 +92,8 @@ inline const bool PullRemoteFile(const FileManager::FileList &list,
   return false;
 }
 
-inline const bool PushRemoteFile(FileManager::FileList &list,
-                                 const std::string &file) {
-  std::string localpath = FileManager::Get_Local_Device_TEMP_Path(list.device_id) + file;
+inline const bool PushRemoteFile(FileManager::FileList &list,const std::string& source_id,const std::string &file) {
+  std::string localpath = FileManager::Get_Local_Device_TEMP_Path(source_id) + file;
   if (!FileManager::is_local_file_exist(localpath))
     return false;
   std::string result = RunADBCommand("push " + localpath +
