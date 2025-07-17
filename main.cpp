@@ -273,8 +273,8 @@ void MyFrame::OnDeviceSelected(wxCommandEvent &event) {
     int cnt = 0;
 
     for (const auto &item : list.recordlist) {
-      ADB::PullRemoteFile(list, item, TEMP_Path);
-      auto recordlist = hexreader::Get_Record_List(TEMP_Path + item);
+      ADB::PullRemoteFile(list, item, FileManager::Get_Local_Device_TEMP_Path(list.device_id));
+      auto recordlist = hexreader::Get_Record_List(FileManager::Get_Local_Device_TEMP_Path(list.device_id) + item);
       for (const auto &recorditem : recordlist) {
         mapping[recorditem.datetime] = item.substr(item.rfind("_") + 1);
       }
@@ -287,8 +287,8 @@ void MyFrame::OnDeviceSelected(wxCommandEvent &event) {
     }
 
     for (const auto &item : list.record) {
-      ADB::PullRemoteFile(list, item, TEMP_Path);
-      auto record = hexreader::Get_Record(TEMP_Path + item);
+      ADB::PullRemoteFile(list, item, FileManager::Get_Local_Device_TEMP_Path(list.device_id));
+      auto record = hexreader::Get_Record(FileManager::Get_Local_Device_TEMP_Path(list.device_id) + item);
 
       std::string notify=std::format("正在构建文件列表中...... 当前进度:{:.1f}%", static_cast<double>(++cnt) / sum * 100);
 
@@ -391,6 +391,8 @@ void MyFrame::OnExport(wxCommandEvent &event) {
 
     auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
     std::string export_path = Setting::GetData().Export_Path;
+    if(export_path.back()!='\\')
+      export_path+='\\';
 
     for (size_t i = 0; i < selections.size(); ++i) {
       long index = selections[i];
@@ -408,7 +410,7 @@ void MyFrame::OnExport(wxCommandEvent &event) {
     }
 
     wxTheApp->CallAfter([=, this]() {
-      std::string notify = std::format("导出完成！ {} 成功，{} 失败", success_cnt,
+      std::string notify = std::format("导出完成！目录:{} {} 成功，{} 失败", export_path,success_cnt,
                                     total - success_cnt);
       SetStatusText(wxString::FromUTF8(notify));
     });
@@ -494,7 +496,7 @@ void MyFrame::OnSendToDynamicDevice(wxCommandEvent &event) {
       });
 
       if (ADB::PullRemoteFile(
-            FileManager::GetListByDeviceID(lists, selected_device_id), file) &&
+            FileManager::GetListByDeviceID(lists, selected_device_id), file,FileManager::Get_Local_Device_TEMP_Path(list.device_id)) &&
         ADB::PushRemoteFile(lists[event.GetId() - 2000], file))
         ++success_cnt;
     }

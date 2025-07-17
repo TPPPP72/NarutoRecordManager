@@ -66,7 +66,7 @@ GetRecordFiles(std::string SelectedDevice = "no selection") {
 
 inline const bool PullRemoteFile(const FileManager::FileList &list,
                                  const std::string &file,
-                                 const std::string &path = TEMP_Path) {
+                                 const std::string &path) {
   bool flag = false;
   for (const auto &i : list.recordlist) {
     if (i == file) {
@@ -94,7 +94,7 @@ inline const bool PullRemoteFile(const FileManager::FileList &list,
 
 inline const bool PushRemoteFile(FileManager::FileList &list,
                                  const std::string &file) {
-  std::string localpath = TEMP_Path + file;
+  std::string localpath = FileManager::Get_Local_Device_TEMP_Path(list.device_id) + file;
   if (!FileManager::is_local_file_exist(localpath))
     return false;
   std::string result = RunADBCommand("push " + localpath +

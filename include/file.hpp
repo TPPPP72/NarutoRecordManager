@@ -11,10 +11,10 @@
 #include "setting.hpp"
 
 const std::string ADB_Path = ".\\bin\\adb.exe";
-const std::string TEMP_Path = ".\\temp\\";
 
 namespace FileManager {
 
+const std::string TEMP_Path = ".\\temp\\";
 // for each device
 struct FileList {
 public:
@@ -61,7 +61,11 @@ inline const void local_system_clear() {
 inline std::string Get_Local_Device_TEMP_Path(const std::string &device_id){
   if(_access((TEMP_Path+device_id).c_str(), F_OK)==-1)
     _mkdir((TEMP_Path+device_id).c_str());
-  return TEMP_Path+device_id;
+  return TEMP_Path+device_id+"\\";
+}
+
+inline std::string Get_TEMP_Path(){
+  return TEMP_Path;
 }
 
 inline FileList& GetListByDeviceID(std::vector<FileList> &lists,
