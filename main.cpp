@@ -12,6 +12,8 @@
 #include <algorithm>
 #include <cstdio>
 #include <string>
+#include <format>
+#include <thread>
 #include <wx/filename.h>
 #include <wx/listctrl.h>
 #include <wx/wxprec.h>
@@ -246,37 +248,62 @@ void MyFrame::OnDeviceSelected(wxCommandEvent &event) {
   std::string selected_device_id =
       deviceList->GetString(event.GetSelection()).ToStdString();
   SetStatusText(wxString::FromUTF8("选择设备:" + selected_device_id));
-  auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
-  SetStatusText(wxString::FromUTF8("正在构建文件列表中......" + selected_device_id));
-  std::map<std::string,std::string> mapping;
-  for (const auto &item : list.recordlist) {
-    ADB::PullRemoteFile(list, item,TEMP_Path);
-    auto recordlist = hexreader::Get_Record_List(TEMP_Path+item);
-    for(const auto &recorditem:recordlist){
-      mapping[recorditem.datetime]=item.substr(item.rfind("_")+1);
-    }
-    FileManager::local_system_clear();
-  }
-  for (const auto &item : list.record) {
-    ADB::PullRemoteFile(list, item,TEMP_Path);
-    auto record = hexreader::Get_Record(TEMP_Path+item);
-    long index = fileList->InsertItem(fileList->GetItemCount(), item);
+  std::thread([=, this]() {
+    auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
+    std::map<std::string, std::string> mapping;
+    int sum = list.recordlist.size() + list.record.size();
     int cnt = 0;
-    for(const auto &playeritem:record.information.inner.players){
-      fileList->SetItem(index,++cnt,wxString::FromUTF8(playeritem.userdata.nickname));
+
+    for (const auto &item : list.recordlist) {
+      ADB::PullRemoteFile(list, item, TEMP_Path);
+      auto recordlist = hexreader::Get_Record_List(TEMP_Path + item);
+      for (const auto &recorditem : recordlist) {
+        mapping[recorditem.datetime] = item.substr(item.rfind("_") + 1);
+      }
+      FileManager::local_system_clear();
+
+      std::string notify=std::format("正在构建文件列表中...... 当前进度:{:.1f}%", static_cast<double>(++cnt) / sum * 100);
+      wxTheApp->CallAfter([=, this]() {
+        SetStatusText(wxString::FromUTF8(notify));
+      });
     }
-    if(record.settle_information.inner.statu==1)
-    fileList->SetItem(index,3,wxString::FromUTF8("平"));
-    else if(record.settle_information.inner.statu==2)
-    fileList->SetItem(index,3,wxString::FromUTF8("负"));
-    else
-    fileList->SetItem(index,3,wxString::FromUTF8("胜"));
-    if(mapping.find(item)==mapping.end())
-      fileList->SetItem(index,4,wxString::FromUTF8("无"));
-    else
-      fileList->SetItem(index,4,mapping[item]);
-  }
-  SetStatusText(wxString::FromUTF8("文件列表构建完毕！" + selected_device_id));
+
+    for (const auto &item : list.record) {
+      ADB::PullRemoteFile(list, item, TEMP_Path);
+      auto record = hexreader::Get_Record(TEMP_Path + item);
+
+      std::string notify=std::format("正在构建文件列表中...... 当前进度:{:.1f}%", static_cast<double>(++cnt) / sum * 100);
+
+      wxTheApp->CallAfter([=, this]() {
+        long index = fileList->InsertItem(fileList->GetItemCount(), item);
+
+        int playerIndex = 0;
+        for (const auto &playeritem : record.information.inner.players) {
+          fileList->SetItem(index, ++playerIndex,
+                            wxString::FromUTF8(playeritem.userdata.nickname));
+        }
+
+        int result = record.settle_information.inner.statu;
+        if (result == 1)
+          fileList->SetItem(index, 3, wxT("平"));
+        else if (result == 2)
+          fileList->SetItem(index, 3, wxT("负"));
+        else
+          fileList->SetItem(index, 3, wxT("胜"));
+
+        if (mapping.find(item) != mapping.end())
+          fileList->SetItem(index, 4, wxString::FromUTF8(mapping.at(item)));
+        else
+          fileList->SetItem(index, 4, wxT("无"));
+
+        SetStatusText(wxString::FromUTF8(notify));
+      });
+    }
+
+    wxTheApp->CallAfter([=, this]() {
+      SetStatusText(wxT("文件列表构建完毕！"));
+    });
+  }).detach();
 }
 
 void MyFrame::OnFileSelected(wxListEvent &event) {
