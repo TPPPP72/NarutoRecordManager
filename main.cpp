@@ -6,6 +6,7 @@
 #include "./include/setting.hpp"
 #include "include/tools.hpp"
 #include "include/winruntime.hpp"
+#include "wx/app.h"
 #include "wx/dynarray.h"
 #include "wx/event.h"
 #include "wx/language.h"
@@ -13,14 +14,14 @@
 #include "wx/string.h"
 #include <algorithm>
 #include <cstdio>
+#include <format>
+#include <fstream>
 #include <memory>
 #include <string>
-#include <format>
 #include <thread>
 #include <wx/filename.h>
 #include <wx/listctrl.h>
 #include <wx/wxprec.h>
-
 
 #ifndef WX_PRECOMP
 #include <wx/wx.h>
@@ -55,6 +56,7 @@ private:
   void OnExport(wxCommandEvent &event);
   void OnDelete(wxCommandEvent &event);
   void OnSendToDynamicDevice(wxCommandEvent &event);
+  void OnClose(wxCloseEvent &event);
 };
 
 wxIMPLEMENT_APP(MyApp);
@@ -144,6 +146,7 @@ MyFrame::MyFrame()
   Bind(wxEVT_MENU, &MyFrame::OnImportFromComputer, this, ID_Import);
   Bind(wxEVT_MENU, &MyFrame::OnExit, this, wxID_EXIT);
   Bind(wxEVT_MENU, &MyFrame::OnRefresh, this, wxID_REFRESH);
+  Bind(wxEVT_CLOSE_WINDOW, &MyFrame::OnClose, this);
 
   // 程序初始化
   SetStatusText(wxString::FromUTF8("初始化中......"));
@@ -157,9 +160,7 @@ MyFrame::MyFrame()
 }
 
 void MyFrame::OnExit(wxCommandEvent &event) {
-  FileManager::local_system_clear();
-  RunCommand("taskkill /f /im adb.exe");
-  Close(true); 
+  Close(true);
 }
 
 void MyFrame::OnAbout(wxCommandEvent &event) {
@@ -203,7 +204,11 @@ void MyFrame::OnRefresh(wxCommandEvent &event) {
     deviceList->Append(item.device_id);
   }
 
-  SetStatusText(wxString::FromUTF8("刷新完成！"));
+  std::thread([this]() {
+    FileManager::local_system_clear();
+    wxTheApp->CallAfter(
+        [this]() { SetStatusText(wxString::FromUTF8("刷新完成！")); });
+  }).detach();
 }
 
 void MyFrame::OnImportFromComputer(wxCommandEvent &event) {
@@ -216,8 +221,9 @@ void MyFrame::OnImportFromComputer(wxCommandEvent &event) {
       deviceList->GetString(deviceList->GetSelection()).ToStdString();
   wxFileDialog openFileDialog(
       this, wxString::FromUTF8("选择文件"),
-      wxFileName::DirName(wxString::FromUTF8(Setting::GetData().Export_Path)).GetAbsolutePath(), "",
-      wxString::FromUTF8("所有文件 (*.*)|*.*"),
+      wxFileName::DirName(wxString::FromUTF8(Setting::GetData().Export_Path))
+          .GetAbsolutePath(),
+      "", wxString::FromUTF8("所有文件 (*.*)|*.*"),
       wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_MULTIPLE);
 
   if (openFileDialog.ShowModal() == wxID_OK) {
@@ -226,12 +232,13 @@ void MyFrame::OnImportFromComputer(wxCommandEvent &event) {
 
     std::thread([=, this]() {
       int success_cnt = 0;
-      int total=paths.size();
+      int total = paths.size();
       for (const auto &path : paths) {
         wxTheApp->CallAfter([=, this]() {
-          std::string notify =
-              std::format("正在导入文件:{} 当前进度:{:.1f}%", wxString(path.substr(path.rfind("\\") + 1)).ToStdString(),
-                          static_cast<double>(success_cnt) / total * 100);
+          std::string notify = std::format(
+              "正在导入文件:{} 当前进度:{:.1f}%",
+              wxString(path.substr(path.rfind("\\") + 1)).ToStdString(),
+              static_cast<double>(success_cnt) / total * 100);
           SetStatusText(wxString::FromUTF8(notify));
         });
         if (ADB::PushRemoteFile_Full(
@@ -243,10 +250,10 @@ void MyFrame::OnImportFromComputer(wxCommandEvent &event) {
         }
       }
       wxTheApp->CallAfter([=, this]() {
-      std::string notify = std::format("导入完成！ {} 成功，{} 失败", success_cnt,
-                                    total - success_cnt);
-      SetStatusText(wxString::FromUTF8(notify));
-    });
+        std::string notify = std::format("导入完成！ {} 成功，{} 失败",
+                                         success_cnt, total - success_cnt);
+        SetStatusText(wxString::FromUTF8(notify));
+      });
     }).detach();
   } else {
     wxMessageBox(wxString::FromUTF8("未选择文件"), wxString::FromUTF8("错误"),
@@ -266,62 +273,106 @@ void MyFrame::OnDeviceSelected(wxCommandEvent &event) {
   std::string selected_device_id =
       deviceList->GetString(event.GetSelection()).ToStdString();
   SetStatusText(wxString::FromUTF8("选择设备:" + selected_device_id));
+  if (FileManager::Is_Local_Device_MAP_TEMP_Exists(selected_device_id)) {
+    std::thread([selected_device_id, this]() {
+      auto datas = FileManager::Get_File_List_Json(selected_device_id)
+                       .get<std::vector<FileManager::FileData>>();
+
+      int total = datas.size();
+      wxTheApp->CallAfter([this, datas = std::move(datas), total]() {
+        int cnt = 0;
+        for (const auto &item : datas) {
+          long index = fileList->InsertItem(fileList->GetItemCount(),wxString::FromUTF8(item.file));
+          fileList->SetItem(index, 1, wxString::FromUTF8(item.data.p1));
+          fileList->SetItem(index, 2, wxString::FromUTF8(item.data.p2));
+          fileList->SetItem(index, 3, wxString::FromUTF8(item.data.statu));
+          fileList->SetItem(index, 4, wxString::FromUTF8(item.data.belong));
+          std::string notify = std::format("获取到已构建的文件列表，加载中...... 当前进度:{:.1f}%",static_cast<double>(++cnt) / total * 100);
+          SetStatusText(wxString::FromUTF8(notify));
+        }
+      });
+    }).detach();
+    return;
+  }
   std::thread([=, this]() {
     auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
     std::map<std::string, std::string> mapping;
     int sum = list.recordlist.size() + list.record.size();
     int cnt = 0;
 
-    for (const auto &item : list.recordlist) {
-      ADB::PullRemoteFile(list, item, FileManager::Get_Local_Device_TEMP_Path(list.device_id));
-      auto recordlist = hexreader::Get_Record_List(FileManager::Get_Local_Device_TEMP_Path(list.device_id) + item);
-      for (const auto &recorditem : recordlist) {
-        mapping[recorditem.datetime] = item.substr(item.rfind("_") + 1);
-      }
-      FileManager::local_system_clear();
+    std::vector<FileManager::FileData> datas;
 
-      std::string notify=std::format("正在构建文件列表中...... 当前进度:{:.1f}%", static_cast<double>(++cnt) / sum * 100);
-      wxTheApp->CallAfter([=, this]() {
-        SetStatusText(wxString::FromUTF8(notify));
-      });
+    for (const auto &item : list.recordlist) {
+        std::string temp_path = FileManager::Get_Local_Device_TEMP_Path(list.device_id);
+        ADB::PullRemoteFile(list, item, temp_path);
+        auto recordlist = hexreader::Get_Record_List(temp_path + item);
+
+        for (const auto &recorditem : recordlist) {
+            mapping[recorditem.datetime] = item.substr(item.rfind("_") + 1);
+        }
+
+        FileManager::local_system_clear(list.device_id);
+
+        std::string notify = std::format("正在构建文件列表中...... 当前进度:{:.1f}%",
+                                         static_cast<double>(++cnt) / sum * 100);
+        wxTheApp->CallAfter([=, this]() {
+            SetStatusText(wxString::FromUTF8(notify));
+        });
     }
 
     for (const auto &item : list.record) {
-      ADB::PullRemoteFile(list, item, FileManager::Get_Local_Device_TEMP_Path(list.device_id));
-      auto record = hexreader::Get_Record(FileManager::Get_Local_Device_TEMP_Path(list.device_id) + item);
-
-      std::string notify=std::format("正在构建文件列表中...... 当前进度:{:.1f}%", static_cast<double>(++cnt) / sum * 100);
-
-      wxTheApp->CallAfter([=, this]() {
-        long index = fileList->InsertItem(fileList->GetItemCount(), item);
-
+        std::string temp_path = FileManager::Get_Local_Device_TEMP_Path(list.device_id);
+        ADB::PullRemoteFile(list, item, temp_path);
+        auto record = hexreader::Get_Record(temp_path + item);
+        FileManager::FileData filedata;
+        filedata.file = item;
         int playerIndex = 0;
         for (const auto &playeritem : record.information.inner.players) {
-          fileList->SetItem(index, ++playerIndex,
-                            wxString::FromUTF8(playeritem.userdata.nickname));
+            if (playerIndex == 0)
+                filedata.data.p1 = playeritem.userdata.nickname;
+            else if (playerIndex == 1)
+                filedata.data.p2 = playeritem.userdata.nickname;
+            ++playerIndex;
         }
 
         int result = record.settle_information.inner.statu;
         if (result == 1)
-          fileList->SetItem(index, 3, wxT("平"));
+            filedata.data.statu = "平";
         else if (result == 2)
-          fileList->SetItem(index, 3, wxT("负"));
+            filedata.data.statu = "负";
         else
-          fileList->SetItem(index, 3, wxT("胜"));
+            filedata.data.statu = "胜";
 
         if (mapping.find(item) != mapping.end())
-          fileList->SetItem(index, 4, wxString::FromUTF8(mapping.at(item)));
+            filedata.data.belong = mapping.at(item);
         else
-          fileList->SetItem(index, 4, wxT("无"));
+            filedata.data.belong = "无";
 
-        SetStatusText(wxString::FromUTF8(notify));
-      });
+        datas.emplace_back(std::move(filedata));
+
+        std::string notify = std::format("正在构建文件列表中...... 当前进度:{:.1f}%",
+                                         static_cast<double>(++cnt) / sum * 100);
+        wxTheApp->CallAfter([=, this]() {
+            SetStatusText(wxString::FromUTF8(notify));
+        });
     }
-
-    wxTheApp->CallAfter([=, this]() {
-      SetStatusText(wxT("文件列表构建完毕！"));
+    {
+        std::ofstream output(FileManager::Get_Local_Device_MAP_TEMP(selected_device_id));
+        nlohmann::json j = datas;
+        output << j.dump(4);
+        output.close();
+    }
+    wxTheApp->CallAfter([this, datas = std::move(datas)]() {
+        for (const auto &filedata : datas) {
+            long index = fileList->InsertItem(fileList->GetItemCount(), wxString::FromUTF8(filedata.file));
+            fileList->SetItem(index, 1, wxString::FromUTF8(filedata.data.p1));
+            fileList->SetItem(index, 2, wxString::FromUTF8(filedata.data.p2));
+            fileList->SetItem(index, 3, wxString::FromUTF8(filedata.data.statu));
+            fileList->SetItem(index, 4, wxString::FromUTF8(filedata.data.belong));
+        }
+        SetStatusText(wxString::FromUTF8("文件列表构建完毕！"));
     });
-  }).detach();
+}).detach();
 }
 
 void MyFrame::OnFileSelected(wxListEvent &event) {
@@ -371,7 +422,6 @@ void MyFrame::OnFileListRightClick(wxMouseEvent &event) {
   menu->Bind(wxEVT_MENU, &MyFrame::OnDelete, this, wxID_DELETE);
 
   PopupMenu(menu.get(), pos_in_frame);
-
 }
 
 void MyFrame::OnExport(wxCommandEvent &event) {
@@ -391,8 +441,8 @@ void MyFrame::OnExport(wxCommandEvent &event) {
 
     auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
     std::string export_path = Setting::GetData().Export_Path;
-    if(export_path.back()!='\\')
-      export_path+='\\';
+    if (export_path.back() != '\\')
+      export_path += '\\';
 
     for (size_t i = 0; i < selections.size(); ++i) {
       long index = selections[i];
@@ -401,7 +451,9 @@ void MyFrame::OnExport(wxCommandEvent &event) {
       auto file_ptr = std::make_shared<std::string>(std::move(file));
 
       wxTheApp->CallAfter([=, this]() {
-        std::string notify=std::format("正在导出文件:{} 当前进度:{:.1f}%", *file_ptr,static_cast<double>(success_cnt) / total * 100);
+        std::string notify =
+            std::format("正在导出文件:{} 当前进度:{:.1f}%", *file_ptr,
+                        static_cast<double>(success_cnt) / total * 100);
         SetStatusText(wxString::FromUTF8(notify));
       });
 
@@ -410,8 +462,9 @@ void MyFrame::OnExport(wxCommandEvent &event) {
     }
 
     wxTheApp->CallAfter([=, this]() {
-      std::string notify = std::format("导出完成！目录:{} {} 成功，{} 失败", export_path,success_cnt,
-                                    total - success_cnt);
+      std::string notify =
+          std::format("导出完成！目录:{} {} 成功，{} 失败", export_path,
+                      success_cnt, total - success_cnt);
       SetStatusText(wxString::FromUTF8(notify));
     });
   }).detach();
@@ -426,8 +479,8 @@ void MyFrame::OnDelete(wxCommandEvent &event) {
                                        wxLIST_STATE_SELECTED)) != -1) {
     selections.Add(item);
   }
-  std::thread([=,this](){
-    int success_cnt=0;
+  std::thread([=, this]() {
+    int success_cnt = 0;
     int total = selections.size();
 
     auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
@@ -440,7 +493,9 @@ void MyFrame::OnDelete(wxCommandEvent &event) {
       auto file_ptr = std::make_shared<std::string>(std::move(file));
 
       wxTheApp->CallAfter([=, this]() {
-        std::string notify=std::format("正在删除文件:{} 当前进度:{:.1f}%", *file_ptr,static_cast<double>(success_cnt) / total * 100);
+        std::string notify =
+            std::format("正在删除文件:{} 当前进度:{:.1f}%", *file_ptr,
+                        static_cast<double>(success_cnt) / total * 100);
         SetStatusText(wxString::FromUTF8(notify));
       });
 
@@ -491,22 +546,31 @@ void MyFrame::OnSendToDynamicDevice(wxCommandEvent &event) {
       auto file_ptr = std::make_shared<std::string>(std::move(file));
 
       wxTheApp->CallAfter([=, this]() {
-        std::string notify=std::format("正在发送文件:{} 当前进度:{:.1f}%", *file_ptr,static_cast<double>(success_cnt) / total * 100);
+        std::string notify =
+            std::format("正在发送文件:{} 当前进度:{:.1f}%", *file_ptr,
+                        static_cast<double>(success_cnt) / total * 100);
         SetStatusText(wxString::FromUTF8(notify));
       });
 
       if (ADB::PullRemoteFile(
-            FileManager::GetListByDeviceID(lists, selected_device_id), file,FileManager::Get_Local_Device_TEMP_Path(list.device_id)) &&
-        ADB::PushRemoteFile(lists[event.GetId() - 2000], file))
+              FileManager::GetListByDeviceID(lists, selected_device_id), file,
+              FileManager::Get_Local_Device_TEMP_Path(list.device_id)) &&
+          ADB::PushRemoteFile(lists[event.GetId() - 2000], file))
         ++success_cnt;
     }
 
     wxTheApp->CallAfter([=, this]() {
-      std::string notify = std::format("发送完成！ {} 成功，{} 失败", success_cnt,
-                                    total - success_cnt);
+      std::string notify = std::format("发送完成！ {} 成功，{} 失败",
+                                       success_cnt, total - success_cnt);
       SetStatusText(wxString::FromUTF8(notify));
     });
   }).detach();
+}
+
+void MyFrame::OnClose(wxCloseEvent &event) {
+  FileManager::local_system_clear();
+  RunCommand("taskkill /f /im adb.exe");
+  Destroy();
 }
 
 std::vector<FileManager::FileList> init() {

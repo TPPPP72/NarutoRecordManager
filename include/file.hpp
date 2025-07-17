@@ -1,14 +1,17 @@
 #pragma once
 
+#include "data.h"
+#include "json.hpp"
+#include "setting.hpp"
+#include "tools.hpp"
 #include <direct.h>
 #include <filesystem>
+#include <fstream>
 #include <io.h>
 #include <regex>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "tools.hpp"
-#include "setting.hpp"
 
 const std::string ADB_Path = ".\\bin\\adb.exe";
 
@@ -58,18 +61,87 @@ inline const void local_system_clear() {
     std::filesystem::remove_all(entry.path());
 }
 
-inline std::string Get_Local_Device_TEMP_Path(const std::string &device_id){
-  if(_access((TEMP_Path+device_id).c_str(), F_OK)==-1)
-    _mkdir((TEMP_Path+device_id).c_str());
-  return TEMP_Path+device_id+"\\";
+inline std::string Get_Local_Device_TEMP_Path(const std::string &device_id) {
+  std::string new_id = device_id;
+  for (auto &i : new_id)
+    if (i == ':')
+      i = '_';
+  if (_access((TEMP_Path + new_id).c_str(), F_OK) == -1)
+    _mkdir((TEMP_Path + new_id).c_str());
+  return TEMP_Path + new_id + "\\";
 }
 
-inline std::string Get_TEMP_Path(){
-  return TEMP_Path;
+inline bool Is_Local_Device_MAP_TEMP_Exists(const std::string &device_id) {
+  return (_access((Get_Local_Device_TEMP_Path(device_id) + "map").c_str(),
+                  F_OK) != -1);
 }
 
-inline FileList& GetListByDeviceID(std::vector<FileList> &lists,
-                                  const std::string &id) {
+inline std::string Get_Local_Device_MAP_TEMP(const std::string &device_id) {
+  return Get_Local_Device_TEMP_Path(device_id) + "map";
+}
+
+inline std::string Get_TEMP_Path() { return TEMP_Path; }
+
+struct Data {
+  std::string p1;
+  std::string p2;
+  std::string statu;
+  std::string belong;
+};
+
+struct FileData {
+  std::string file;
+  Data data;
+};
+
+inline void to_json(nlohmann::json &j, const Data &d) {
+  j = nlohmann::json{
+      {"1P", d.p1}, {"2P", d.p2}, {"statu", d.statu}, {"belong", d.belong}};
+}
+
+inline void from_json(const nlohmann::json &j, Data &d) {
+  j.at("1P").get_to(d.p1);
+  j.at("2P").get_to(d.p2);
+  j.at("statu").get_to(d.statu);
+  j.at("belong").get_to(d.belong);
+}
+
+inline void to_json(nlohmann::json &j, const FileData &r) {
+  j.emplace("file", r.file);
+  j.emplace("data", r.data);
+}
+
+inline void from_json(const nlohmann::json &j, FileData &r) {
+  j.at("file").get_to(r.file);
+  j.at("data").get_to(r.data);
+}
+
+inline nlohmann::json Get_File_List_Json(const std::string &device_id) {
+  std::ifstream rd(Get_Local_Device_MAP_TEMP(device_id));
+  nlohmann::json j;
+  rd >> j;
+  rd.close();
+  return j;
+}
+
+inline bool Write_File_List_Json(const nlohmann::json &j,
+                                 const std::string &device_id) {
+  std::ofstream rd(Get_Local_Device_MAP_TEMP(device_id));
+  if (!rd.is_open())
+    return false;
+  rd << j;
+  rd.close();
+  return true;
+}
+
+inline const void local_system_clear(const std::string &device_id) {
+  for (const auto &entry : std::filesystem::directory_iterator(
+           Get_Local_Device_TEMP_Path(device_id)))
+    std::filesystem::remove_all(entry.path());
+}
+
+inline FileList &GetListByDeviceID(std::vector<FileList> &lists,
+                                   const std::string &id) {
   for (auto &item : lists) {
     if (item.device_id == id)
       return item;
