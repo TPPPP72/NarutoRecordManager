@@ -99,7 +99,7 @@ inline const bool PushRemoteFile(FileManager::FileList &list,
     return false;
   std::string result = RunADBCommand("push " + localpath +
                                          " /storage/emulated/0/Android/data/"
-                                         "com.tencent.KiHan/files/LocalRecord/",
+                                         "com.tencent.KiHan/files/LocalRecord/"+file,
                                      list.device_id);
   if (result.find("1 file pushed") != std::string::npos) {
     if (list.recordlistmatch(file))
@@ -118,7 +118,7 @@ inline const bool PushRemoteFile_Full(FileManager::FileList &list,
     return false;
   std::string result = RunADBCommand("push " + path +
                                          " /storage/emulated/0/Android/data/"
-                                         "com.tencent.KiHan/files/LocalRecord/",
+                                         "com.tencent.KiHan/files/LocalRecord/"+file,
                                      list.device_id);
   if (result.find("1 file pushed") != std::string::npos) {
     if (list.recordlistmatch(file))

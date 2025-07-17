@@ -9,7 +9,7 @@ WX_CXXFLAGS := $(shell wx-config --cxxflags)
 WX_CPPFLAGS := $(shell wx-config --cppflags)
 WX_LIBS     := $(shell wx-config --libs)
 PROTO_LIBS  := $(shell pkg-config --cflags --libs protobuf)
-CXXFLAGS    := -mwindows -Wall -Wno-ignored-attributes -Wno-unused-command-line-argument -DUNICODE -D_UNICODE -std=c++20 -O2
+CXXFLAGS    := -Wall -Wno-ignored-attributes -Wno-unused-command-line-argument -DUNICODE -D_UNICODE -std=c++20 -O2
 
 # 源文件和目标
 SRC := main.cpp

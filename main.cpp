@@ -212,31 +212,42 @@ void MyFrame::OnImportFromComputer(wxCommandEvent &event) {
                  wxString::FromUTF8("错误"), wxOK | wxICON_ERROR);
     return;
   }
-  std::string selected_device_id =
+  const std::string selected_device_id =
       deviceList->GetString(deviceList->GetSelection()).ToStdString();
   wxFileDialog openFileDialog(
       this, wxString::FromUTF8("选择文件"),
-      wxFileName::DirName(Setting::GetData().Export_Path).GetAbsolutePath(), "",
+      wxFileName::DirName(wxString::FromUTF8(Setting::GetData().Export_Path)).GetAbsolutePath(), "",
       wxString::FromUTF8("所有文件 (*.*)|*.*"),
       wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_MULTIPLE);
 
   if (openFileDialog.ShowModal() == wxID_OK) {
     wxArrayString paths;
     openFileDialog.GetPaths(paths);
-    int cnt = 0;
-    for (const auto &path : paths) {
-      SetStatusText(wxString::FromUTF8("正在导入文件:" + path));
-      if (ADB::PushRemoteFile_Full(
-              FileManager::GetListByDeviceID(lists, selected_device_id),
-              path.ToStdString())) {
-        ++cnt;
-        fileList->InsertItem(fileList->GetItemCount(),
-                             wxString(path.substr(path.rfind("\\") + 1)));
+
+    std::thread([=, this]() {
+      int success_cnt = 0;
+      int total=paths.size();
+      for (const auto &path : paths) {
+        wxTheApp->CallAfter([=, this]() {
+          std::string notify =
+              std::format("正在导入文件:{} 当前进度:{:.1f}%", wxString(path.substr(path.rfind("\\") + 1)).ToStdString(),
+                          static_cast<double>(success_cnt) / total * 100);
+          SetStatusText(wxString::FromUTF8(notify));
+        });
+        if (ADB::PushRemoteFile_Full(
+                FileManager::GetListByDeviceID(lists, selected_device_id),
+                path.ToStdString())) {
+          ++success_cnt;
+          fileList->InsertItem(fileList->GetItemCount(),
+                               wxString(path.substr(path.rfind("\\") + 1)));
+        }
       }
-    }
-    SetStatusText(
-        wxString::FromUTF8("导入完成！ " + std::to_string(cnt) + "成功 " +
-                           std::to_string(paths.size() - cnt) + "失败"));
+      wxTheApp->CallAfter([=, this]() {
+      std::string notify = std::format("导入完成！ {} 成功，{} 失败", success_cnt,
+                                    total - success_cnt);
+      SetStatusText(wxString::FromUTF8(notify));
+    });
+    }).detach();
   } else {
     wxMessageBox(wxString::FromUTF8("未选择文件"), wxString::FromUTF8("错误"),
                  wxOK | wxICON_ERROR);
