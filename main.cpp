@@ -4,6 +4,7 @@
 #include "./include/hexreader.hpp"
 #include "./include/hexwriter.hpp"
 #include "./include/setting.hpp"
+#include "include/tools.hpp"
 #include "wx/dynarray.h"
 #include "wx/event.h"
 #include "wx/language.h"
@@ -358,23 +359,44 @@ void MyFrame::OnFileListRightClick(wxMouseEvent &event) {
 }
 
 void MyFrame::OnExport(wxCommandEvent &event) {
+  const std::string selected_device_id =
+      deviceList->GetString(deviceList->GetSelection()).ToStdString();
+
+  wxArrayInt selections;
   long item = -1;
-  int cnt = 0;
   while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL,
                                        wxLIST_STATE_SELECTED)) != -1) {
-    std::string file = fileList->GetItemText(item, 0).ToStdString();
-    std::string selected_device_id =
-        deviceList->GetString(deviceList->GetSelection()).ToStdString();
-    SetStatusText(wxString::FromUTF8("正在导出文件:" + file));
-    if (ADB::PullRemoteFile(
-            FileManager::GetListByDeviceID(lists, selected_device_id), file,
-            wxString::FromUTF8(Setting::GetData().Export_Path).ToStdString()))
-      ++cnt;
-    // 进度显示待做
+    selections.Add(item);
   }
-  SetStatusText(wxString::FromUTF8(
-      "导出完成！ " + std::to_string(cnt) + "成功 " +
-      std::to_string(fileList->GetSelectedItemCount() - cnt) + "失败"));
+
+  std::thread([=, this]() {
+    int success_cnt = 0;
+    int total = selections.size();
+
+    auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
+    std::string export_path = Setting::GetData().Export_Path;
+
+    for (size_t i = 0; i < selections.size(); ++i) {
+      long index = selections[i];
+      std::string file = fileList->GetItemText(index, 0).ToStdString();
+
+      auto file_ptr = std::make_shared<std::string>(std::move(file));
+
+      wxTheApp->CallAfter([=, this]() {
+        std::string notify=std::format("正在导出文件:{} 当前进度:{:.1f}%", *file_ptr,static_cast<double>(success_cnt) / total * 100);
+        SetStatusText(wxString::FromUTF8(notify));
+      });
+
+      if (ADB::PullRemoteFile(list, *file_ptr, utf8_to_gbk(export_path)))
+        ++success_cnt;
+    }
+
+    wxTheApp->CallAfter([=, this]() {
+      std::string notify = std::format("导出完成！ {} 成功，{} 失败", success_cnt,
+                                    total - success_cnt);
+      SetStatusText(wxString::FromUTF8(notify));
+    });
+  }).detach();
 }
 
 void MyFrame::OnDelete(wxCommandEvent &event) {
