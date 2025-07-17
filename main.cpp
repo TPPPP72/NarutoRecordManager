@@ -5,6 +5,7 @@
 #include "./include/hexwriter.hpp"
 #include "./include/setting.hpp"
 #include "include/tools.hpp"
+#include "include/winruntime.hpp"
 #include "wx/dynarray.h"
 #include "wx/event.h"
 #include "wx/language.h"
@@ -155,7 +156,11 @@ MyFrame::MyFrame()
   SetStatusText(wxString::FromUTF8("初始化完成！"));
 }
 
-void MyFrame::OnExit(wxCommandEvent &event) { Close(true); }
+void MyFrame::OnExit(wxCommandEvent &event) {
+  FileManager::local_system_clear();
+  RunCommand("taskkill /f /im adb.exe");
+  Close(true); 
+}
 
 void MyFrame::OnAbout(wxCommandEvent &event) {
   wxMessageBox(
