@@ -12,6 +12,7 @@
 #include "wx/string.h"
 #include <algorithm>
 #include <cstdio>
+#include <memory>
 #include <string>
 #include <format>
 #include <thread>
@@ -333,7 +334,7 @@ void MyFrame::OnFileListRightClick(wxMouseEvent &event) {
     SetStatusText(wxString::FromUTF8("选择文件:" +
                                      fileList->GetItemText(file_list_index)));
   }
-  wxMenu *menu = new wxMenu;
+  std::unique_ptr<wxMenu> menu = std::make_unique<wxMenu>();
   menu->Append(ID_Export, wxString::FromUTF8("导出到电脑"));
 
   if (lists.size() >= 2) {
@@ -353,9 +354,8 @@ void MyFrame::OnFileListRightClick(wxMouseEvent &event) {
   menu->Bind(wxEVT_MENU, &MyFrame::OnExport, this, ID_Export);
   menu->Bind(wxEVT_MENU, &MyFrame::OnDelete, this, wxID_DELETE);
 
-  PopupMenu(menu, pos_in_frame);
+  PopupMenu(menu.get(), pos_in_frame);
 
-  delete menu;
 }
 
 void MyFrame::OnExport(wxCommandEvent &event) {
@@ -402,7 +402,7 @@ void MyFrame::OnExport(wxCommandEvent &event) {
 void MyFrame::OnDelete(wxCommandEvent &event) {
   long item = -1;
   int cnt = 0;
-  std::vector<std::string> DelSuc;
+  std::vector<std::string> DelSuccess;
   while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL,
                                        wxLIST_STATE_SELECTED)) != -1) {
     std::string file = fileList->GetItemText(item, 0).ToStdString();
@@ -411,12 +411,12 @@ void MyFrame::OnDelete(wxCommandEvent &event) {
     SetStatusText(wxString::FromUTF8("正在删除文件:" + file));
     if (ADB::DeleteRemoteFile(
             FileManager::GetListByDeviceID(lists, selected_device_id), file)) {
-      DelSuc.emplace_back(file);
+      DelSuccess.emplace_back(file);
       ++cnt;
     }
     // 进度显示待做
   }
-  for (const auto &item : DelSuc) {
+  for (const auto &item : DelSuccess) {
     long itemIndex = -1;
     while ((itemIndex = fileList->GetNextItem(itemIndex)) != -1) {
       wxString filename = fileList->GetItemText(itemIndex, 0);
