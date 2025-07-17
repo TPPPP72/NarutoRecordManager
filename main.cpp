@@ -400,56 +400,95 @@ void MyFrame::OnExport(wxCommandEvent &event) {
 }
 
 void MyFrame::OnDelete(wxCommandEvent &event) {
+  const std::string selected_device_id =
+      deviceList->GetString(deviceList->GetSelection()).ToStdString();
+  wxArrayInt selections;
   long item = -1;
-  int cnt = 0;
-  std::vector<std::string> DelSuccess;
   while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL,
                                        wxLIST_STATE_SELECTED)) != -1) {
-    std::string file = fileList->GetItemText(item, 0).ToStdString();
-    std::string selected_device_id =
-        deviceList->GetString(deviceList->GetSelection()).ToStdString();
-    SetStatusText(wxString::FromUTF8("正在删除文件:" + file));
-    if (ADB::DeleteRemoteFile(
-            FileManager::GetListByDeviceID(lists, selected_device_id), file)) {
-      DelSuccess.emplace_back(file);
-      ++cnt;
-    }
-    // 进度显示待做
+    selections.Add(item);
   }
-  for (const auto &item : DelSuccess) {
-    long itemIndex = -1;
-    while ((itemIndex = fileList->GetNextItem(itemIndex)) != -1) {
-      wxString filename = fileList->GetItemText(itemIndex, 0);
-      if (filename == wxString(item)) {
-        fileList->DeleteItem(itemIndex);
-        break;
+  std::thread([=,this](){
+    int success_cnt=0;
+    int total = selections.size();
+
+    auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
+    std::vector<std::string> DelSuccess;
+
+    for (size_t i = 0; i < selections.size(); ++i) {
+      long index = selections[i];
+      std::string file = fileList->GetItemText(index, 0).ToStdString();
+
+      auto file_ptr = std::make_shared<std::string>(std::move(file));
+
+      wxTheApp->CallAfter([=, this]() {
+        std::string notify=std::format("正在删除文件:{} 当前进度:{:.1f}%", *file_ptr,static_cast<double>(success_cnt) / total * 100);
+        SetStatusText(wxString::FromUTF8(notify));
+      });
+
+      if (ADB::DeleteRemoteFile(list, *file_ptr)) {
+        DelSuccess.emplace_back(*file_ptr);
+        ++success_cnt;
       }
     }
-  }
-  SetStatusText(wxString::FromUTF8(
-      "删除完成！ " + std::to_string(cnt) + "成功 " +
-      std::to_string(fileList->GetSelectedItemCount() - cnt) + "失败"));
+    wxTheApp->CallAfter([=, this]() {
+      for (const auto &item : DelSuccess) {
+        long itemIndex = -1;
+        while ((itemIndex = fileList->GetNextItem(itemIndex)) != -1) {
+          wxString filename = fileList->GetItemText(itemIndex, 0);
+          if (filename == wxString(item)) {
+            fileList->DeleteItem(itemIndex);
+            break;
+          }
+        }
+      }
+      std::string notify = std::format("删除完成！ {} 成功，{} 失败",
+                                       success_cnt, total - success_cnt);
+      SetStatusText(wxString::FromUTF8(notify));
+    });
+  }).detach();
 }
 
 void MyFrame::OnSendToDynamicDevice(wxCommandEvent &event) {
+  const std::string selected_device_id =
+      deviceList->GetString(deviceList->GetSelection()).ToStdString();
+  wxArrayInt selections;
   long item = -1;
-  int cnt = 0;
   while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL,
                                        wxLIST_STATE_SELECTED)) != -1) {
-    std::string file = fileList->GetItemText(item, 0).ToStdString();
-    std::string selected_device_id =
-        deviceList->GetString(deviceList->GetSelection()).ToStdString();
-    SetStatusText(wxString::FromUTF8("正在发送文件:" + file));
-    if (ADB::PullRemoteFile(
+    selections.Add(item);
+  }
+
+  std::thread([=, this]() {
+    int success_cnt = 0;
+    int total = selections.size();
+
+    auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
+    std::string export_path = Setting::GetData().Export_Path;
+
+    for (size_t i = 0; i < selections.size(); ++i) {
+      long index = selections[i];
+      std::string file = fileList->GetItemText(index, 0).ToStdString();
+
+      auto file_ptr = std::make_shared<std::string>(std::move(file));
+
+      wxTheApp->CallAfter([=, this]() {
+        std::string notify=std::format("正在发送文件:{} 当前进度:{:.1f}%", *file_ptr,static_cast<double>(success_cnt) / total * 100);
+        SetStatusText(wxString::FromUTF8(notify));
+      });
+
+      if (ADB::PullRemoteFile(
             FileManager::GetListByDeviceID(lists, selected_device_id), file) &&
         ADB::PushRemoteFile(lists[event.GetId() - 2000], file))
-      ++cnt;
-    // 进度显示待做
-  }
-  SetStatusText(wxString::FromUTF8(
-      "发送完成！ " + std::to_string(cnt) + "成功 " +
-      std::to_string(fileList->GetSelectedItemCount() - cnt) + "失败"));
-  FileManager::local_system_clear();
+        ++success_cnt;
+    }
+
+    wxTheApp->CallAfter([=, this]() {
+      std::string notify = std::format("发送完成！ {} 成功，{} 失败", success_cnt,
+                                    total - success_cnt);
+      SetStatusText(wxString::FromUTF8(notify));
+    });
+  }).detach();
 }
 
 std::vector<FileManager::FileList> init() {
