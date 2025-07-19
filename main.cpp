@@ -55,6 +55,7 @@ private:
   void OnFileListRightClick(wxMouseEvent &event);
   void OnExport(wxCommandEvent &event);
   void OnDelete(wxCommandEvent &event);
+  void OnEditOwnership(wxCommandEvent &event);
   void OnSendToDynamicDevice(wxCommandEvent &event);
   void OnClose(wxCloseEvent &event);
 };
@@ -140,7 +141,7 @@ MyFrame::MyFrame()
   fileList->Bind(wxEVT_LIST_ITEM_SELECTED, &MyFrame::OnFileSelected, this);
   fileList->Bind(wxEVT_LIST_ITEM_DESELECTED, &MyFrame::OnFileSelected, this);
   fileList->Bind(wxEVT_RIGHT_DOWN, &MyFrame::OnFileListRightClick, this);
-  Bind(wxEVT_MENU, &MyFrame::OnADBWirelessDebugHelper, this, wxID_ADD);
+  //Bind(wxEVT_MENU, &MyFrame::OnADBWirelessDebugHelper, this, wxID_ADD);
   Bind(wxEVT_MENU, &MyFrame::OnSettingExportPath, this, ID_Setting);
   Bind(wxEVT_MENU, &MyFrame::OnAbout, this, wxID_ABOUT);
   Bind(wxEVT_MENU, &MyFrame::OnImportFromComputer, this, ID_Import);
@@ -515,8 +516,10 @@ void MyFrame::OnFileListRightClick(wxMouseEvent &event) {
   }
 
   menu->Append(wxID_DELETE, wxString::FromUTF8("删除"));
+  menu->Append(wxID_EDIT,wxString::FromUTF8("编辑所有权"));
   menu->Bind(wxEVT_MENU, &MyFrame::OnExport, this, ID_Export);
   menu->Bind(wxEVT_MENU, &MyFrame::OnDelete, this, wxID_DELETE);
+  menu->Bind(wxEVT_MENU,&MyFrame::OnEditOwnership,this,wxID_EDIT);
 
   PopupMenu(menu.get(), pos_in_frame);
 }
