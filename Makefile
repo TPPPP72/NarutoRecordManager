@@ -24,7 +24,7 @@ $(project): $(OBJ) $(RES_OBJ)
 
 # 编译代码文件
 %.o : %.cpp
-	$(CXX) -c $< -o $@ $(CXXFLAGS) $(WX_CXXFLAGS) $(WX_LIBS)
+	$(CXX) -c $< -o $@ $(CXXFLAGS) $(WX_CXXFLAGS) $(WX_LIBS) $(PROTO_LIBS)
 
 %.o: ./proto/%.cc
 	pkg-config --cflags protobuf
