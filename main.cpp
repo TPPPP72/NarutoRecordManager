@@ -172,7 +172,7 @@ void MyFrame::OnAbout(wxCommandEvent &event) {
                          "Bridge，实现火影忍者手游录像的管理迁移等功能\n开发者"
                          "：TPPPP\nBilibili:https://space.bilibili.com/"
                          "358783831\nGithub:https://github.com/TPPPP72/"
-                         "NarutoRecordManager\n\n版本号:0.2"),
+                         "NarutoRecordManager\n\n版本号:1.0"),
       wxString::FromUTF8("关于该软件"), wxOK | wxICON_INFORMATION);
 }
 
