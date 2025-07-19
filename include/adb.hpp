@@ -5,14 +5,16 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <format>
 
 namespace ADB {
 inline const std::string
 RunADBCommand(const std::string &command,
               std::string SelectedDevice = "no selection") {
   if (SelectedDevice == "no selection")
-    return RunCommand(ADB_Path + " " + command);
-  return RunCommand(ADB_Path + " -s " + SelectedDevice + " " + command);
+    return RunCommand(std::format("{} {}", ADB_Path, command));
+  return RunCommand(
+      std::format("{} -s {} {}", ADB_Path, SelectedDevice, command));
 }
 
 inline const std::vector<std::string> GetDevices() {
@@ -82,24 +84,30 @@ inline const bool PullRemoteFile(const FileManager::FileList &list,
   }
   if (!flag)
     return false;
-  std::string result = RunADBCommand(
-      "pull "
-      "/storage/emulated/0/Android/data/com.tencent.KiHan/files/LocalRecord/" +
-          file + " " + path,
-      list.device_id);
+  std::string result =
+      RunADBCommand(std::format("pull "
+                                "/storage/emulated/0/Android/data/"
+                                "com.tencent.KiHan/files/LocalRecord/{} {}",
+                                file, path),
+                    list.device_id);
   if (result.find("1 file pulled") != std::string::npos)
     return true;
   return false;
 }
 
-inline const bool PushRemoteFile(FileManager::FileList &list,const std::string& source_id,const std::string &file) {
-  std::string localpath = FileManager::Get_Local_Device_TEMP_Path(source_id) + file;
+inline const bool PushRemoteFile(FileManager::FileList &list,
+                                 const std::string &source_id,
+                                 const std::string &file) {
+  std::string localpath =
+      FileManager::Get_Local_Device_TEMP_Path(source_id) + file;
   if (!FileManager::is_local_file_exist(localpath))
     return false;
-  std::string result = RunADBCommand("push " + localpath +
-                                         " /storage/emulated/0/Android/data/"
-                                         "com.tencent.KiHan/files/LocalRecord/"+file,
-                                     list.device_id);
+  std::string result =
+      RunADBCommand(std::format("push {} "
+                                "/storage/emulated/0/Android/data/"
+                                "com.tencent.KiHan/files/LocalRecord/{}",
+                                localpath, file),
+                    list.device_id);
   if (result.find("1 file pushed") != std::string::npos) {
     if (list.recordlistmatch(file))
       list.recordlist.emplace_back(file);
@@ -115,10 +123,13 @@ inline const bool PushRemoteFile_Full(FileManager::FileList &list,
   std::string file = path.substr(path.rfind("\\") + 1);
   if (!FileManager::is_local_file_exist(path))
     return false;
-  std::string result = RunADBCommand("push " + path +
-                                         " /storage/emulated/0/Android/data/"
-                                         "com.tencent.KiHan/files/LocalRecord/"+file,
-                                     list.device_id);
+
+  std::string result =
+      RunADBCommand(std::format("push {} "
+                                "/storage/emulated/0/Android/data/"
+                                "com.tencent.KiHan/files/LocalRecord/{}",
+                                path, file),
+                    list.device_id);
   if (result.find("1 file pushed") != std::string::npos) {
     if (list.recordlistmatch(file))
       list.recordlist.emplace_back(file);
@@ -131,11 +142,13 @@ inline const bool PushRemoteFile_Full(FileManager::FileList &list,
 
 inline const bool DeleteRemoteFile(FileManager::FileList &list,
                                    const std::string &file) {
-  std::string result = RunADBCommand(
-      "shell rm "
-      "/storage/emulated/0/Android/data/com.tencent.KiHan/files/LocalRecord/" +
-          file,
-      list.device_id);
+
+  std::string result =
+      RunADBCommand(std::format("shell rm "
+                                "/storage/emulated/0/Android/data/"
+                                "com.tencent.KiHan/files/LocalRecord/{}",
+                                file),
+                    list.device_id);
   if (result.length() > 0)
     return false;
   std::erase(list.recordlist, file);
