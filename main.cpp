@@ -78,7 +78,7 @@ MyFrame::MyFrame()
   SetIcon(wxICON(NarutoRecordManager));
   // 工具栏
   wxMenu *controlMenu = new wxMenu;
-  controlMenu->Append(wxID_ADD, wxString::FromUTF8("ADB无线调试辅助"));
+  //controlMenu->Append(wxID_ADD, wxString::FromUTF8("ADB无线调试辅助"));
   controlMenu->Append(wxID_REFRESH, wxString::FromUTF8("刷新\tF5"));
   controlMenu->Append(ID_Import, wxString::FromUTF8("从电脑导入"));
 
