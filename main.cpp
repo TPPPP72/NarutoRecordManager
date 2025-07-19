@@ -32,6 +32,7 @@ std::vector<FileManager::FileList> init();
 class MyApp : public wxApp {
 public:
   virtual bool OnInit();
+
 private:
   wxLocale m_locale;
 };
@@ -82,7 +83,7 @@ MyFrame::MyFrame()
   SetIcon(wxICON(NarutoRecordManager));
   // 工具栏
   wxMenu *controlMenu = new wxMenu;
-  //controlMenu->Append(wxID_ADD, wxString::FromUTF8("ADB无线调试辅助"));
+  // controlMenu->Append(wxID_ADD, wxString::FromUTF8("ADB无线调试辅助"));
   controlMenu->Append(wxID_REFRESH, wxString::FromUTF8("刷新\tF5"));
   controlMenu->Append(ID_Import, wxString::FromUTF8("从电脑导入"));
 
@@ -144,7 +145,7 @@ MyFrame::MyFrame()
   fileList->Bind(wxEVT_LIST_ITEM_SELECTED, &MyFrame::OnFileSelected, this);
   fileList->Bind(wxEVT_LIST_ITEM_DESELECTED, &MyFrame::OnFileSelected, this);
   fileList->Bind(wxEVT_RIGHT_DOWN, &MyFrame::OnFileListRightClick, this);
-  //Bind(wxEVT_MENU, &MyFrame::OnADBWirelessDebugHelper, this, wxID_ADD);
+  // Bind(wxEVT_MENU, &MyFrame::OnADBWirelessDebugHelper, this, wxID_ADD);
   Bind(wxEVT_MENU, &MyFrame::OnSettingExportPath, this, ID_Setting);
   Bind(wxEVT_MENU, &MyFrame::OnAbout, this, wxID_ABOUT);
   Bind(wxEVT_MENU, &MyFrame::OnImportFromComputer, this, ID_Import);
@@ -303,7 +304,8 @@ void MyFrame::OnDeviceSelected(wxCommandEvent &event) {
         });
       } else {
         std::thread([=, this]() {
-          auto &list = FileManager::GetListByDeviceID(lists, selected_device_id);
+          auto &list =
+              FileManager::GetListByDeviceID(lists, selected_device_id);
           std::map<std::string, std::string> mapping;
           int sum = list.recordlist.size() + list.record.size();
           int cnt = 0;
@@ -519,10 +521,10 @@ void MyFrame::OnFileListRightClick(wxMouseEvent &event) {
   }
 
   menu->Append(wxID_DELETE, wxString::FromUTF8("删除"));
-  menu->Append(wxID_EDIT,wxString::FromUTF8("编辑所有权"));
+  menu->Append(wxID_EDIT, wxString::FromUTF8("编辑所有权"));
   menu->Bind(wxEVT_MENU, &MyFrame::OnExport, this, ID_Export);
   menu->Bind(wxEVT_MENU, &MyFrame::OnDelete, this, wxID_DELETE);
-  menu->Bind(wxEVT_MENU,&MyFrame::OnEditOwnership,this,wxID_EDIT);
+  menu->Bind(wxEVT_MENU, &MyFrame::OnEditOwnership, this, wxID_EDIT);
 
   PopupMenu(menu.get(), pos_in_frame);
 }
@@ -636,14 +638,97 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
   }
 
   try {
-    long long game_id = std::stoll(input.ToStdString());
+    std::string game_id = input.ToStdString();
+    long long temp = std::stoll(game_id);
 
-    if (game_id < 0) {
+    if (temp < 0) {
       throw std::invalid_argument("负数不合法");
     }
 
-    wxMessageBox(wxString::Format("你输入的游戏ID是：%lld", game_id),
-                 wxString::FromUTF8("输入成功"), wxOK | wxICON_INFORMATION);
+    const std::string selected_device_id =
+        deviceList->GetString(deviceList->GetSelection()).ToStdString();
+    wxArrayInt selections;
+    std::vector<std::string> Change_List;
+    long item = -1;
+    while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL)) != -1) {
+      bool isSelected = fileList->GetItemState(item, wxLIST_STATE_SELECTED) &
+                        wxLIST_STATE_SELECTED;
+      wxString colText = fileList->GetItemText(item, 4);
+      bool matchDeviceId = colText.ToStdString() == game_id;
+
+      if (isSelected) {
+        Change_List.emplace_back(fileList->GetItemText(item, 0));
+      }
+      if (isSelected || matchDeviceId) {
+        selections.Add(item);
+      }
+    }
+
+    SetStatusText(wxString::FromUTF8("正在修改选中文件的所有权"));
+
+    std::thread([=, this]() {
+      std::vector<ManagerData::Player_Record> records;
+
+      for (size_t i = 0; i < selections.size(); ++i) {
+        long index = selections[i];
+        std::string file = fileList->GetItemText(index, 0).ToStdString();
+
+        auto record = hexreader::Get_Record(std::format(
+            "{}{}", FileManager::Get_Local_Device_TEMP_Path(selected_device_id),
+            file));
+        ManagerData::User_Data select;
+        for (const auto &item : record.information.inner.players) {
+          select = item.userdata;
+          if (std::to_string(item.userdata.user_id) != game_id)
+            break;
+        }
+        std::vector<int> ninja_number, fashion_number;
+        for (const auto &item : select.game.ninja) {
+          ninja_number.emplace_back(item.basic.ninja_id);
+          fashion_number.emplace_back(
+              item.basic.ninja_resource.fashion_resource % 10);
+        }
+        ManagerData::Player_Record new_record;
+        new_record.timestamp = to_timestamp(file);
+        if (record.settle_information.inner.statu == 0)
+          new_record.statu = 3;
+        else
+          new_record.statu = record.settle_information.inner.statu;
+        new_record.datetime = file;
+        new_record.info = {select.nickname,
+                           select.avatar_url,
+                           select.private_info.area_code - 400000 + 2000,
+                           select.area_name,
+                           ninja_number,
+                           select.rank,
+                           fashion_number,
+                           select.dynamic_avatar};
+        new_record.is_temp = false;
+        records.emplace_back(new_record);
+      }
+      hexwriter::Write_Record_List(
+          records, std::format("{}LocalRecordList_JueDou_{}",
+                               FileManager::Get_Local_Device_TEMP_Path(
+                                   selected_device_id),
+                               game_id));
+      ADB::PushRemoteFile_Full(FileManager::GetListByDeviceID(lists, selected_device_id),std::format("{}LocalRecordList_JueDou_{}",
+                               FileManager::Get_Local_Device_TEMP_Path(
+                                   selected_device_id),
+                               game_id));
+      wxTheApp->CallAfter([=, this]() {
+        for (const auto &item : Change_List) {
+          long itemIndex = -1;
+          while ((itemIndex = fileList->GetNextItem(itemIndex)) != -1) {
+            wxString filename = fileList->GetItemText(itemIndex, 0);
+            if (filename == wxString(item)) {
+              fileList->SetItem(itemIndex, 4, wxString::FromUTF8(game_id));
+              break;
+            }
+          }
+        }
+        SetStatusText(wxString::FromUTF8("修改完成"));
+      });
+    }).detach();
 
   } catch (const std::exception &e) {
     wxMessageBox(wxString::FromUTF8("输入的不是合法的数字，请重新尝试"),
