@@ -296,7 +296,7 @@ void MyFrame::OnDeviceSelected(wxCommandEvent &event) {
         });
       } else {
         std::thread([=, this]() {
-          auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
+          auto &list = FileManager::GetListByDeviceID(lists, selected_device_id);
           std::map<std::string, std::string> mapping;
           int sum = list.recordlist.size() + list.record.size();
           int cnt = 0;
@@ -533,7 +533,7 @@ void MyFrame::OnExport(wxCommandEvent &event) {
     int success_cnt = 0;
     int total = selections.size();
 
-    auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
+    auto &list = FileManager::GetListByDeviceID(lists, selected_device_id);
     std::string export_path = Setting::GetData().Export_Path;
     if (export_path.back() != '\\')
       export_path += '\\';
@@ -577,7 +577,7 @@ void MyFrame::OnDelete(wxCommandEvent &event) {
     int success_cnt = 0;
     int total = selections.size();
 
-    auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
+    auto &list = FileManager::GetListByDeviceID(lists, selected_device_id);
     std::vector<std::string> DelSuccess;
 
     for (size_t i = 0; i < selections.size(); ++i) {
@@ -630,7 +630,7 @@ void MyFrame::OnSendToDynamicDevice(wxCommandEvent &event) {
     int success_cnt = 0;
     int total = selections.size();
 
-    auto list = FileManager::GetListByDeviceID(lists, selected_device_id);
+    auto &list = FileManager::GetListByDeviceID(lists, selected_device_id);
     std::string export_path = Setting::GetData().Export_Path;
 
     for (size_t i = 0; i < selections.size(); ++i) {
