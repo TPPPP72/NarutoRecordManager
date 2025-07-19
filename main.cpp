@@ -32,6 +32,8 @@ std::vector<FileManager::FileList> init();
 class MyApp : public wxApp {
 public:
   virtual bool OnInit();
+private:
+  wxLocale m_locale;
 };
 
 enum { ID_Export = 1001, ID_Import, ID_Setting };
@@ -63,8 +65,9 @@ private:
 wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit() {
-  wxLocale locale;
-  locale.Init(wxLANGUAGE_CHINESE_SIMPLIFIED);
+  m_locale.AddCatalogLookupPathPrefix("locale");
+  m_locale.Init(wxLANGUAGE_CHINESE_SIMPLIFIED);
+  m_locale.AddCatalog("wxstd");
   MyFrame *frame = new MyFrame();
   frame->Show(true);
   return true;
@@ -620,6 +623,32 @@ void MyFrame::OnDelete(wxCommandEvent &event) {
       SetStatusText(wxString::FromUTF8(notify));
     });
   }).detach();
+}
+
+void MyFrame::OnEditOwnership(wxCommandEvent &event) {
+  wxString input =
+      wxGetTextFromUser(wxString::FromUTF8("请输入游戏 ID"),
+                        wxString::FromUTF8("编辑所属权"), "", this);
+
+  if (input.IsEmpty()) {
+    SetStatusText(wxString::FromUTF8("已取消输入游戏ID"));
+    return;
+  }
+
+  try {
+    long long game_id = std::stoll(input.ToStdString());
+
+    if (game_id < 0) {
+      throw std::invalid_argument("负数不合法");
+    }
+
+    wxMessageBox(wxString::Format("你输入的游戏ID是：%lld", game_id),
+                 wxString::FromUTF8("输入成功"), wxOK | wxICON_INFORMATION);
+
+  } catch (const std::exception &e) {
+    wxMessageBox(wxString::FromUTF8("输入的不是合法的数字，请重新尝试"),
+                 wxString::FromUTF8("格式错误"), wxOK | wxICON_ERROR);
+  }
 }
 
 void MyFrame::OnSendToDynamicDevice(wxCommandEvent &event) {
