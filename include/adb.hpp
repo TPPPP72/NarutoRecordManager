@@ -1,6 +1,7 @@
 #pragma once
 
 #include "file.hpp"
+#include "path.hpp"
 #include "winruntime.hpp"
 #include <sstream>
 #include <string>
@@ -12,9 +13,9 @@ inline const std::string
 RunADBCommand(const std::string &command,
               std::string SelectedDevice = "no selection") {
   if (SelectedDevice == "no selection")
-    return RunCommand(std::format("{} {}", ADB_Path, command));
+    return RunCommand(std::format("{} {}", FileManager::ADB_Path, command));
   return RunCommand(
-      std::format("{} -s {} {}", ADB_Path, SelectedDevice, command));
+      std::format("{} -s {} {}", FileManager::ADB_Path, SelectedDevice, command));
 }
 
 inline const std::vector<std::string> GetDevices() {

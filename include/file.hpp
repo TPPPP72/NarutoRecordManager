@@ -2,6 +2,7 @@
 
 #include "data.h"
 #include "json.hpp"
+#include "path.hpp"
 #include "setting.hpp"
 #include "tools.hpp"
 #include <direct.h>
@@ -12,12 +13,10 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-const std::string ADB_Path = ".\\bin\\adb.exe";
+#include <shlobj.h>
 
 namespace FileManager {
 
-const std::string TEMP_Path = ".\\temp\\";
 // for each device
 struct FileList {
 public:
@@ -50,14 +49,16 @@ inline const bool is_local_file_exist(const std::string &path) {
 }
 
 inline const void local_system_init() {
-  if (_access(TEMP_Path.c_str(), F_OK) == -1)
-    _mkdir(TEMP_Path.c_str());
+  if (_access(Get_Local_Root_Path().c_str(), F_OK) == -1)
+    _mkdir(Get_Local_Root_Path().c_str());
+  if (_access(Get_TEMP_Path().c_str(), F_OK) == -1)
+    _mkdir(Get_TEMP_Path().c_str());
   if (_access(utf8_to_gbk(Setting::GetData().Export_Path).c_str(), F_OK) == -1)
     _mkdir(utf8_to_gbk(Setting::GetData().Export_Path).c_str());
 }
 
 inline const void local_system_clear() {
-  for (const auto &entry : std::filesystem::directory_iterator(TEMP_Path))
+  for (const auto &entry : std::filesystem::directory_iterator(Get_TEMP_Path()))
     std::filesystem::remove_all(entry.path());
 }
 
@@ -66,9 +67,9 @@ inline std::string Get_Local_Device_TEMP_Path(const std::string &device_id) {
   for (auto &i : new_id)
     if (i == ':')
       i = '_';
-  if (_access((TEMP_Path + new_id).c_str(), F_OK) == -1)
-    _mkdir((TEMP_Path + new_id).c_str());
-  return TEMP_Path + new_id + "\\";
+  if (_access((Get_TEMP_Path() + new_id).c_str(), F_OK) == -1)
+    _mkdir((Get_TEMP_Path() + new_id).c_str());
+  return Get_TEMP_Path() + new_id + "\\";
 }
 
 inline bool Is_Local_Device_MAP_TEMP_Exists(const std::string &device_id) {
@@ -79,8 +80,6 @@ inline bool Is_Local_Device_MAP_TEMP_Exists(const std::string &device_id) {
 inline std::string Get_Local_Device_MAP_TEMP(const std::string &device_id) {
   return Get_Local_Device_TEMP_Path(device_id) + "map";
 }
-
-inline std::string Get_TEMP_Path() { return TEMP_Path; }
 
 struct Data {
   std::string p1;

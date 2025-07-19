@@ -3,12 +3,14 @@
 #include "data.h"
 #include "json.hpp"
 #include <fstream>
+#include <format>
+#include "path.hpp"
 
 namespace Setting{
     inline Data GetData(){
-        std::ifstream rd("settings.json");
+        std::ifstream rd(std::format("{}settings.json",FileManager::Get_Local_Root_Path()));
         if(!rd.is_open()){
-            return Data{".\\export\\"};
+            return Data{std::format("{}export",FileManager::Get_Local_Root_Path())};
         }
         nlohmann::ordered_json json;
         rd>>json;
@@ -16,7 +18,7 @@ namespace Setting{
         return Data{json["Export_Path"]};
     }
     inline bool WriteData(const Data& data){
-        std::ofstream wt("settings.json");
+        std::ofstream wt(std::format("{}settings.json",FileManager::Get_Local_Root_Path()));
         if(!wt.is_open())
           return false;
         nlohmann::ordered_json json;
