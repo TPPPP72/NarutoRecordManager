@@ -251,6 +251,9 @@ void MyFrame::OnImportFromComputer(wxCommandEvent &event) {
         std::string notify = std::format("导入完成！ {} 成功，{} 失败",
                                          success_cnt, total - success_cnt);
         SetStatusText(wxString::FromUTF8(notify));
+        wxCommandEvent dummy;
+        dummy.SetInt(deviceList->GetSelection());
+        OnDeviceSelected(dummy);
       });
     }).detach();
   } else {
