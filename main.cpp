@@ -684,9 +684,10 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
         }
         std::vector<int> ninja_number, fashion_number;
         for (const auto &item : select.game.ninja) {
-          ninja_number.emplace_back(item.basic.ninja_id);
-          fashion_number.emplace_back(
-              item.basic.ninja_resource.fashion_resource % 10);
+          // ninja_number.emplace_back(item.basic.ninja_id);
+          // fashion_number.emplace_back(item.basic.ninja_resource.fashion_resource % 10);
+          ninja_number.emplace_back(90001001);
+          fashion_number.emplace_back(0);
         }
         ManagerData::Player_Record new_record;
         new_record.timestamp = to_timestamp(file);
