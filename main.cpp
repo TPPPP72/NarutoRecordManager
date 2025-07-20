@@ -127,7 +127,7 @@ MyFrame::MyFrame()
   fileList->InsertColumn(1, "1P", wxLIST_FORMAT_LEFT, 90);
   fileList->InsertColumn(2, "2P", wxLIST_FORMAT_LEFT, 90);
   fileList->InsertColumn(3, wxString::FromUTF8("胜负"), wxLIST_FORMAT_LEFT, 50);
-  fileList->InsertColumn(4, wxString::FromUTF8("所属权"), wxLIST_FORMAT_LEFT,
+  fileList->InsertColumn(4, wxString::FromUTF8("所有权"), wxLIST_FORMAT_LEFT,
                          150);
 
   wxBoxSizer *rightSizer = new wxBoxSizer(wxVERTICAL);
@@ -630,10 +630,10 @@ void MyFrame::OnDelete(wxCommandEvent &event) {
 void MyFrame::OnEditOwnership(wxCommandEvent &event) {
   wxString input =
       wxGetTextFromUser(wxString::FromUTF8("请输入游戏 ID"),
-                        wxString::FromUTF8("编辑所属权"), "", this);
+                        wxString::FromUTF8("编辑所有权"), "", this);
 
   if (input.IsEmpty()) {
-    SetStatusText(wxString::FromUTF8("开始清除所选文件的所属权"));
+    SetStatusText(wxString::FromUTF8("开始清除所选文件的所有权"));
     std::thread([=, this]() {
       const std::string selected_device_id =
           deviceList->GetString(deviceList->GetSelection()).ToStdString();
@@ -646,15 +646,21 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
                           wxLIST_STATE_SELECTED;
         wxString colText = fileList->GetItemText(item, 4);
         if (isSelected) {
-          map[colText.ToStdString()].emplace_back();
+          map[colText.ToStdString()].emplace_back(fileList->GetItemText(item, 0));
           Change_List.emplace_back(fileList->GetItemText(item, 0));
         }
       }
       for (auto [game_id, files] : map) {
-        auto records = hexreader::Get_Record_List(std::format(
+        std::string path = std::format(
             "{}LocalRecordList_JueDou_{}",
             FileManager::Get_Local_Device_TEMP_Path(selected_device_id),
-            game_id));
+            game_id);
+
+        if (!std::filesystem::exists(path)) {
+          ADB::PullRemoteFile(FileManager::GetListByDeviceID(lists, selected_device_id), std::format("LocalRecordList_JueDou_{}",game_id), FileManager::Get_Local_Device_TEMP_Path(selected_device_id));
+        }
+        auto records = hexreader::Get_Record_List(path);
+        std::cout<<"records.size():"<<records.size()<<std::endl;
         for (auto &item : files) {
           std::erase_if(records, [&](const auto &record) {
             return record.datetime == item;
@@ -676,7 +682,6 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
           ADB::DeleteRemoteFile(FileManager::GetListByDeviceID(lists, selected_device_id), std::format(
               "LocalRecordList_JueDou_{}",game_id));
         }
-        
       }
       wxTheApp->CallAfter([=, this]() {
         for (const auto &item : Change_List) {
@@ -760,8 +765,8 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
                            select.rank,
                            fashion_number,
                            {0, 0}};
-        if (new_record.info.area_code > 4000)
-          new_record.info.area_code = 2000;
+        if (new_record.info.area_code >= 5000 || new_record.info.area_code <= 2000)
+          new_record.info.area_code = 2001;
         new_record.is_temp = false;
         records.emplace_back(new_record);
       }
