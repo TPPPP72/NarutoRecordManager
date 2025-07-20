@@ -646,7 +646,8 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
                           wxLIST_STATE_SELECTED;
         wxString colText = fileList->GetItemText(item, 4);
         if (isSelected) {
-          map[colText.ToStdString()].emplace_back(fileList->GetItemText(item, 0));
+          map[colText.ToStdString()].emplace_back(
+              fileList->GetItemText(item, 0));
           Change_List.emplace_back(fileList->GetItemText(item, 0));
         }
       }
@@ -657,30 +658,34 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
             game_id);
 
         if (!std::filesystem::exists(path)) {
-          ADB::PullRemoteFile(FileManager::GetListByDeviceID(lists, selected_device_id), std::format("LocalRecordList_JueDou_{}",game_id), FileManager::Get_Local_Device_TEMP_Path(selected_device_id));
+          ADB::PullRemoteFile(
+              FileManager::GetListByDeviceID(lists, selected_device_id),
+              std::format("LocalRecordList_JueDou_{}", game_id),
+              FileManager::Get_Local_Device_TEMP_Path(selected_device_id));
         }
         auto records = hexreader::Get_Record_List(path);
-        std::cout<<"records.size():"<<records.size()<<std::endl;
+        std::cout << "records.size():" << records.size() << std::endl;
         for (auto &item : files) {
           std::erase_if(records, [&](const auto &record) {
             return record.datetime == item;
           });
         }
-        if(!records.empty()){
+        if (!records.empty()) {
           hexwriter::Write_Record_List(
-            records, std::format("{}LocalRecordList_JueDou_{}",
-                                 FileManager::Get_Local_Device_TEMP_Path(
-                                     selected_device_id),
-                                 game_id));
+              records, std::format("{}LocalRecordList_JueDou_{}",
+                                   FileManager::Get_Local_Device_TEMP_Path(
+                                       selected_device_id),
+                                   game_id));
           ADB::PushRemoteFile_Full(
-          FileManager::GetListByDeviceID(lists, selected_device_id),
-          std::format(
-              "{}LocalRecordList_JueDou_{}",
-              FileManager::Get_Local_Device_TEMP_Path(selected_device_id),
-              game_id));
-        }else{
-          ADB::DeleteRemoteFile(FileManager::GetListByDeviceID(lists, selected_device_id), std::format(
-              "LocalRecordList_JueDou_{}",game_id));
+              FileManager::GetListByDeviceID(lists, selected_device_id),
+              std::format(
+                  "{}LocalRecordList_JueDou_{}",
+                  FileManager::Get_Local_Device_TEMP_Path(selected_device_id),
+                  game_id));
+        } else {
+          ADB::DeleteRemoteFile(
+              FileManager::GetListByDeviceID(lists, selected_device_id),
+              std::format("LocalRecordList_JueDou_{}", game_id));
         }
       }
       wxTheApp->CallAfter([=, this]() {
@@ -765,7 +770,8 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
                            select.rank,
                            fashion_number,
                            {0, 0}};
-        if (new_record.info.area_code >= 5000 || new_record.info.area_code <= 2000)
+        if (new_record.info.area_code >= 5000 ||
+            new_record.info.area_code <= 2000)
           new_record.info.area_code = 2001;
         new_record.is_temp = false;
         records.emplace_back(new_record);
