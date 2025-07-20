@@ -851,13 +851,13 @@ void MyFrame::OnSendToDynamicDevice(wxCommandEvent &event) {
 }
 
 void MyFrame::OnClose(wxCloseEvent &event) {
-  FileManager::local_system_clear();
   RunCommand("taskkill /f /im adb.exe");
   Destroy();
 }
 
 std::vector<FileManager::FileList> init() {
   FileManager::local_system_init();
+  FileManager::local_system_clear();
   auto devicelist = ADB::GetDevices();
   std::vector<FileManager::FileList> lists;
   std::for_each(devicelist.begin(), devicelist.end(), [&](const auto &item) {
