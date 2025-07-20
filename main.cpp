@@ -700,7 +700,7 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
                            ninja_number,
                            select.rank,
                            fashion_number,
-                           select.dynamic_avatar};
+                           {0,0}};
         new_record.is_temp = false;
         records.emplace_back(new_record);
       }
