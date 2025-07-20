@@ -1,6 +1,8 @@
 # 火影忍者手游录像管理器
 ## 功能
 该软件能够读写设备上的录像文件以及录像列表文件，并进行备份、删除、发送至其他设备、所有权转移的操作
+## 截图
+![软件界面](https://github.com/TPPPP72/NarutoRecordManager/blob/main/img/example.jpg)
 ## 使用
 [bilibili视频链接](https://www.bilibili.com/video/BV15KuJzWEoM)
 ## 提示
