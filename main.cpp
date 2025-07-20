@@ -701,6 +701,8 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
                            select.rank,
                            fashion_number,
                            {0,0}};
+        if(new_record.info.area_code>4000)
+          new_record.info.area_code=2000;
         new_record.is_temp = false;
         records.emplace_back(new_record);
       }
