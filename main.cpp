@@ -769,7 +769,7 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
                            ninja_number,
                            select.rank,
                            fashion_number,
-                           {0, 0}};
+                           select.dynamic_avatar};
         if (new_record.info.area_code >= 5000 ||
             new_record.info.area_code <= 2000)
           new_record.info.area_code = 2001;
