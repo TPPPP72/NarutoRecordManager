@@ -221,15 +221,15 @@ const char descriptor_table_protodef_recordlist_2eproto[] ABSL_ATTRIBUTE_SECTION
     "\037.recordlist.Dynamic_Avatar_Info\"{\n\rPlay"
     "er_Record\022\021\n\ttimestamp\030\001 \001(\003\022\r\n\005statu\030\002 "
     "\001(\005\022\020\n\010datetime\030\003 \001(\t\022%\n\004info\030\004 \001(\0132\027.re"
-    "cordlist.Player_Info\022\017\n\007is_temp\030\005 \001(\005\"5\n"
-    "\nRecordList\022\'\n\004item\030\001 \003(\0132\031.recordlist.P"
-    "layer_Recordb\006proto3"
+    "cordlist.Player_Info\022\017\n\007is_temp\030\005 \001(\005\"9\n"
+    "\nRecordList\022+\n\004item\030\001 \003(\0132\031.recordlist.P"
+    "layer_RecordB\002\020\000b\006proto3"
 };
 static ::absl::once_flag descriptor_table_recordlist_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_recordlist_2eproto = {
     false,
     false,
-    500,
+    504,
     descriptor_table_protodef_recordlist_2eproto,
     "recordlist.proto",
     &descriptor_table_recordlist_2eproto_once,
@@ -1611,13 +1611,13 @@ RecordList::_table_ = {
     ::_pbi::TcParser::GetTable<::recordlist::RecordList>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // repeated .recordlist.Player_Record item = 1;
+    // repeated .recordlist.Player_Record item = 1 [packed = false];
     {::_pbi::TcParser::FastMtR1,
      {10, 63, 0, PROTOBUF_FIELD_OFFSET(RecordList, _impl_.item_)}},
   }}, {{
     65535, 65535
   }}, {{
-    // repeated .recordlist.Player_Record item = 1;
+    // repeated .recordlist.Player_Record item = 1 [packed = false];
     {PROTOBUF_FIELD_OFFSET(RecordList, _impl_.item_), 0, 0,
     (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
   }},
@@ -1653,7 +1653,7 @@ PROTOBUF_NOINLINE void RecordList::Clear() {
   ::uint32_t cached_has_bits = 0;
   (void)cached_has_bits;
 
-  // repeated .recordlist.Player_Record item = 1;
+  // repeated .recordlist.Player_Record item = 1 [packed = false];
   for (unsigned i = 0, n = static_cast<unsigned>(
                            this_._internal_item_size());
        i < n; i++) {
@@ -1689,7 +1689,7 @@ PROTOBUF_NOINLINE void RecordList::Clear() {
 
   ::_pbi::Prefetch5LinesFrom7Lines(&this_);
    {
-    // repeated .recordlist.Player_Record item = 1;
+    // repeated .recordlist.Player_Record item = 1 [packed = false];
     {
       total_size += 1UL * this_._internal_item_size();
       for (const auto& msg : this_._internal_item()) {

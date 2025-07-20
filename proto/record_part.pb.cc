@@ -506,32 +506,32 @@ const char descriptor_table_protodef_record_5fpart_2eproto[] ABSL_ATTRIBUTE_SECT
     "ource\030\001 \001(\005\"O\n\013Ninja_Basic\022\020\n\010ninja_id\030\001"
     " \001(\005\022.\n\016ninja_resource\030\004 \001(\0132\026.record.Ni"
     "nja_Resource\"+\n\005Ninja\022\"\n\005basic\030\001 \001(\0132\023.r"
-    "ecord.Ninja_Basic\"$\n\004Game\022\034\n\005ninja\030\001 \003(\013"
-    "2\r.record.Ninja\"&\n\021User_Data_Private\022\021\n\t"
-    "area_code\030\002 \001(\005\"\371\001\n\tUser_Data\022\017\n\007user_id"
-    "\030\001 \001(\003\022\020\n\010nickname\030\002 \001(\t\022\r\n\005level\030\003 \001(\005\022"
-    "\r\n\005score\030\005 \001(\005\022\032\n\004game\030\007 \001(\0132\014.record.Ga"
-    "me\022\022\n\navatar_url\030\010 \001(\t\022\021\n\tarea_name\030\033 \001("
-    "\t\022*\n\007private\030, \001(\0132\031.record.User_Data_Pr"
-    "ivate\022\014\n\004rank\0303 \001(\005\022.\n\016dynamic_avatar\030\177 "
-    "\001(\0132\026.record.Dynamic_Avatar\"N\n\013Player_Da"
-    "ta\022\014\n\004pos1\030\001 \001(\005\022\014\n\004pos2\030\002 \001(\005\022#\n\010userda"
-    "ta\030\004 \001(\0132\021.record.User_Data\"8\n\021Informati"
-    "on_Inner\022#\n\006player\030\002 \003(\0132\023.record.Player"
-    "_Data\"7\n\013Information\022(\n\005inner\030\001 \001(\0132\031.re"
-    "cord.Information_Inner\")\n\030Settle_Informa"
-    "tion_Inner\022\r\n\005statu\030\004 \001(\005\"E\n\022Settle_Info"
-    "rmation\022/\n\005inner\030\001 \001(\0132 .record.Settle_I"
-    "nformation_Inner\"j\n\006Record\022(\n\013informatio"
-    "n\030\002 \001(\0132\023.record.Information\0226\n\022settle_i"
-    "nformation\030\004 \001(\0132\032.record.Settle_Informa"
-    "tionb\006proto3"
+    "ecord.Ninja_Basic\"(\n\004Game\022 \n\005ninja\030\001 \003(\013"
+    "2\r.record.NinjaB\002\020\000\"&\n\021User_Data_Private"
+    "\022\021\n\tarea_code\030\002 \001(\005\"\371\001\n\tUser_Data\022\017\n\007use"
+    "r_id\030\001 \001(\003\022\020\n\010nickname\030\002 \001(\t\022\r\n\005level\030\003 "
+    "\001(\005\022\r\n\005score\030\005 \001(\005\022\032\n\004game\030\007 \001(\0132\014.recor"
+    "d.Game\022\022\n\navatar_url\030\010 \001(\t\022\021\n\tarea_name\030"
+    "\033 \001(\t\022*\n\007private\030, \001(\0132\031.record.User_Dat"
+    "a_Private\022\014\n\004rank\0303 \001(\005\022.\n\016dynamic_avata"
+    "r\030\177 \001(\0132\026.record.Dynamic_Avatar\"N\n\013Playe"
+    "r_Data\022\014\n\004pos1\030\001 \001(\005\022\014\n\004pos2\030\002 \001(\005\022#\n\010us"
+    "erdata\030\004 \001(\0132\021.record.User_Data\"<\n\021Infor"
+    "mation_Inner\022\'\n\006player\030\002 \003(\0132\023.record.Pl"
+    "ayer_DataB\002\020\000\"7\n\013Information\022(\n\005inner\030\001 "
+    "\001(\0132\031.record.Information_Inner\")\n\030Settle"
+    "_Information_Inner\022\r\n\005statu\030\004 \001(\005\"E\n\022Set"
+    "tle_Information\022/\n\005inner\030\001 \001(\0132 .record."
+    "Settle_Information_Inner\"j\n\006Record\022(\n\013in"
+    "formation\030\002 \001(\0132\023.record.Information\0226\n\022"
+    "settle_information\030\004 \001(\0132\032.record.Settle"
+    "_Informationb\006proto3"
 };
 static ::absl::once_flag descriptor_table_record_5fpart_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_record_5fpart_2eproto = {
     false,
     false,
-    1012,
+    1020,
     descriptor_table_protodef_record_5fpart_2eproto,
     "record_part.proto",
     &descriptor_table_record_5fpart_2eproto_once,
@@ -1752,13 +1752,13 @@ Game::_table_ = {
     ::_pbi::TcParser::GetTable<::record::Game>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // repeated .record.Ninja ninja = 1;
+    // repeated .record.Ninja ninja = 1 [packed = false];
     {::_pbi::TcParser::FastMtR1,
      {10, 63, 0, PROTOBUF_FIELD_OFFSET(Game, _impl_.ninja_)}},
   }}, {{
     65535, 65535
   }}, {{
-    // repeated .record.Ninja ninja = 1;
+    // repeated .record.Ninja ninja = 1 [packed = false];
     {PROTOBUF_FIELD_OFFSET(Game, _impl_.ninja_), 0, 0,
     (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
   }},
@@ -1794,7 +1794,7 @@ PROTOBUF_NOINLINE void Game::Clear() {
   ::uint32_t cached_has_bits = 0;
   (void)cached_has_bits;
 
-  // repeated .record.Ninja ninja = 1;
+  // repeated .record.Ninja ninja = 1 [packed = false];
   for (unsigned i = 0, n = static_cast<unsigned>(
                            this_._internal_ninja_size());
        i < n; i++) {
@@ -1830,7 +1830,7 @@ PROTOBUF_NOINLINE void Game::Clear() {
 
   ::_pbi::Prefetch5LinesFrom7Lines(&this_);
    {
-    // repeated .record.Ninja ninja = 1;
+    // repeated .record.Ninja ninja = 1 [packed = false];
     {
       total_size += 1UL * this_._internal_ninja_size();
       for (const auto& msg : this_._internal_ninja()) {
@@ -3186,13 +3186,13 @@ Information_Inner::_table_ = {
     ::_pbi::TcParser::GetTable<::record::Information_Inner>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // repeated .record.Player_Data player = 2;
+    // repeated .record.Player_Data player = 2 [packed = false];
     {::_pbi::TcParser::FastMtR1,
      {18, 63, 0, PROTOBUF_FIELD_OFFSET(Information_Inner, _impl_.player_)}},
   }}, {{
     65535, 65535
   }}, {{
-    // repeated .record.Player_Data player = 2;
+    // repeated .record.Player_Data player = 2 [packed = false];
     {PROTOBUF_FIELD_OFFSET(Information_Inner, _impl_.player_), 0, 0,
     (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
   }},
@@ -3228,7 +3228,7 @@ PROTOBUF_NOINLINE void Information_Inner::Clear() {
   ::uint32_t cached_has_bits = 0;
   (void)cached_has_bits;
 
-  // repeated .record.Player_Data player = 2;
+  // repeated .record.Player_Data player = 2 [packed = false];
   for (unsigned i = 0, n = static_cast<unsigned>(
                            this_._internal_player_size());
        i < n; i++) {
@@ -3264,7 +3264,7 @@ PROTOBUF_NOINLINE void Information_Inner::Clear() {
 
   ::_pbi::Prefetch5LinesFrom7Lines(&this_);
    {
-    // repeated .record.Player_Data player = 2;
+    // repeated .record.Player_Data player = 2 [packed = false];
     {
       total_size += 1UL * this_._internal_player_size();
       for (const auto& msg : this_._internal_player()) {

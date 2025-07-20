@@ -990,7 +990,7 @@ class RecordList final : public ::google::protobuf::Message
   enum : int {
     kItemFieldNumber = 1,
   };
-  // repeated .recordlist.Player_Record item = 1;
+  // repeated .recordlist.Player_Record item = 1 [packed = false];
   int item_size() const;
   private:
   int _internal_item_size() const;
@@ -1785,7 +1785,7 @@ inline void Player_Record::_internal_set_is_temp(::int32_t value) {
 
 // RecordList
 
-// repeated .recordlist.Player_Record item = 1;
+// repeated .recordlist.Player_Record item = 1 [packed = false];
 inline int RecordList::_internal_item_size() const {
   return _internal_item().size();
 }

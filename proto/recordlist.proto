@@ -31,7 +31,7 @@ message Player_Record {
 
 // 列表文件
 message RecordList {
-  repeated Player_Record item = 1; //单条记录
+  repeated Player_Record item = 1 [packed = false]; //单条记录
 }
 
 

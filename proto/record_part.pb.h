@@ -1639,7 +1639,7 @@ class Game final : public ::google::protobuf::Message
   enum : int {
     kNinjaFieldNumber = 1,
   };
-  // repeated .record.Ninja ninja = 1;
+  // repeated .record.Ninja ninja = 1 [packed = false];
   int ninja_size() const;
   private:
   int _internal_ninja_size() const;
@@ -2385,7 +2385,7 @@ class Information_Inner final : public ::google::protobuf::Message
   enum : int {
     kPlayerFieldNumber = 2,
   };
-  // repeated .record.Player_Data player = 2;
+  // repeated .record.Player_Data player = 2 [packed = false];
   int player_size() const;
   private:
   int _internal_player_size() const;
@@ -3169,7 +3169,7 @@ inline void Ninja::set_allocated_basic(::record::Ninja_Basic* PROTOBUF_NULLABLE 
 
 // Game
 
-// repeated .record.Ninja ninja = 1;
+// repeated .record.Ninja ninja = 1 [packed = false];
 inline int Game::_internal_ninja_size() const {
   return _internal_ninja().size();
 }
@@ -3990,7 +3990,7 @@ inline void Player_Data::set_allocated_userdata(::record::User_Data* PROTOBUF_NU
 
 // Information_Inner
 
-// repeated .record.Player_Data player = 2;
+// repeated .record.Player_Data player = 2 [packed = false];
 inline int Information_Inner::_internal_player_size() const {
   return _internal_player().size();
 }

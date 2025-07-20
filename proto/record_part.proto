@@ -26,7 +26,7 @@ message Ninja{
 
 //对局数据 存放对局相关信息
 message Game{
-  repeated Ninja ninja = 1; //对三个忍者分别记录
+  repeated Ninja ninja = 1 [packed = false]; //对三个忍者分别记录
 }
 
 //用户隐私数据 正常情况下看不到
@@ -58,7 +58,7 @@ message Player_Data{
 
 //内层信息
 message Information_Inner{
-  repeated Player_Data player = 2; //玩家数据
+  repeated Player_Data player = 2 [packed = false]; //玩家数据
 }
 
 message Information{
