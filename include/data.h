@@ -54,7 +54,7 @@ struct User_Data {
   long long user_id;
   std::string nickname;
   int level;
-  int score;
+  unsigned int score;
   Game game;
   std::string avatar_url;
   std::string area_name;
