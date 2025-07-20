@@ -633,7 +633,53 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
                         wxString::FromUTF8("编辑所属权"), "", this);
 
   if (input.IsEmpty()) {
-    SetStatusText(wxString::FromUTF8("已取消输入游戏ID"));
+    SetStatusText(wxString::FromUTF8("开始清除所选文件的所属权"));
+    std::thread([=, this]() {
+      const std::string selected_device_id =
+          deviceList->GetString(deviceList->GetSelection()).ToStdString();
+      wxArrayInt selections;
+      std::map<std::string, std::vector<std::string>> map;
+      std::vector<std::string> Change_List;
+      long item = -1;
+      while ((item = fileList->GetNextItem(item, wxLIST_NEXT_ALL)) != -1) {
+        bool isSelected = fileList->GetItemState(item, wxLIST_STATE_SELECTED) &
+                          wxLIST_STATE_SELECTED;
+        wxString colText = fileList->GetItemText(item, 4);
+        if (isSelected) {
+          map[colText.ToStdString()].emplace_back();
+          Change_List.emplace_back(fileList->GetItemText(item, 0));
+        }
+      }
+      for (auto [game_id, files] : map) {
+        auto records = hexreader::Get_Record_List(std::format(
+            "{}LocalRecordList_JueDou_{}",
+            FileManager::Get_Local_Device_TEMP_Path(selected_device_id),
+            game_id));
+        for (auto &item : files) {
+          std::erase_if(records, [&](const auto &record) {
+            return record.datetime == item;
+          });
+        }
+        hexwriter::Write_Record_List(
+            records, std::format("{}LocalRecordList_JueDou_{}",
+                                 FileManager::Get_Local_Device_TEMP_Path(
+                                     selected_device_id),
+                                 game_id));
+      }
+      wxTheApp->CallAfter([=, this]() {
+        for (const auto &item : Change_List) {
+          long itemIndex = -1;
+          while ((itemIndex = fileList->GetNextItem(itemIndex)) != -1) {
+            wxString filename = fileList->GetItemText(itemIndex, 0);
+            if (filename == wxString(item)) {
+              fileList->SetItem(itemIndex, 4, wxString::FromUTF8("无"));
+              break;
+            }
+          }
+        }
+        SetStatusText(wxString::FromUTF8("清除完成"));
+      });
+    }).detach();
     return;
   }
 
@@ -685,7 +731,8 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
         std::vector<int> ninja_number, fashion_number;
         for (const auto &item : select.game.ninja) {
           // ninja_number.emplace_back(item.basic.ninja_id);
-          // fashion_number.emplace_back(item.basic.ninja_resource.fashion_resource % 10);
+          // fashion_number.emplace_back(item.basic.ninja_resource.fashion_resource
+          // % 10);
           ninja_number.emplace_back(90001001);
           fashion_number.emplace_back(0);
         }
@@ -700,9 +747,9 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
                            ninja_number,
                            select.rank,
                            fashion_number,
-                           {0,0}};
-        if(new_record.info.area_code>4000)
-          new_record.info.area_code=2000;
+                           {0, 0}};
+        if (new_record.info.area_code > 4000)
+          new_record.info.area_code = 2000;
         new_record.is_temp = false;
         records.emplace_back(new_record);
       }
@@ -711,10 +758,12 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
                                FileManager::Get_Local_Device_TEMP_Path(
                                    selected_device_id),
                                game_id));
-      ADB::PushRemoteFile_Full(FileManager::GetListByDeviceID(lists, selected_device_id),std::format("{}LocalRecordList_JueDou_{}",
-                               FileManager::Get_Local_Device_TEMP_Path(
-                                   selected_device_id),
-                               game_id));
+      ADB::PushRemoteFile_Full(
+          FileManager::GetListByDeviceID(lists, selected_device_id),
+          std::format(
+              "{}LocalRecordList_JueDou_{}",
+              FileManager::Get_Local_Device_TEMP_Path(selected_device_id),
+              game_id));
       wxTheApp->CallAfter([=, this]() {
         for (const auto &item : Change_List) {
           long itemIndex = -1;
