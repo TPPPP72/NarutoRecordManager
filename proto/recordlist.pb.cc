@@ -56,9 +56,7 @@ inline constexpr Player_Info::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
         ninja_number_{},
-        _ninja_number_cached_byte_size_{0},
         fashion_number_{},
-        _fashion_number_cached_byte_size_{0},
         nickname_(
             &::google::protobuf::internal::fixed_address_empty_string,
             ::_pbi::ConstantInitialized()),
@@ -215,23 +213,23 @@ const char descriptor_table_protodef_recordlist_2eproto[] ABSL_ATTRIBUTE_SECTION
     protodesc_cold) = {
     "\n\020recordlist.proto\022\nrecordlist\"\?\n\023Dynami"
     "c_Avatar_Info\022\025\n\ravatar_number\030\001 \001(\005\022\021\n\t"
-    "avatar_id\030\002 \001(\005\"\316\001\n\013Player_Info\022\020\n\010nickn"
+    "avatar_id\030\002 \001(\005\"\326\001\n\013Player_Info\022\020\n\010nickn"
     "ame\030\001 \001(\t\022\022\n\navatar_url\030\002 \001(\t\022\021\n\tarea_co"
-    "de\030\003 \001(\005\022\021\n\tarea_name\030\004 \001(\t\022\024\n\014ninja_num"
-    "ber\030\006 \003(\005\022\014\n\004rank\030\007 \001(\005\022\026\n\016fashion_numbe"
-    "r\030\010 \003(\005\0227\n\016dynamic_avatar\030\t \001(\0132\037.record"
-    "list.Dynamic_Avatar_Info\"{\n\rPlayer_Recor"
-    "d\022\021\n\ttimestamp\030\001 \001(\003\022\r\n\005statu\030\002 \001(\005\022\020\n\010d"
-    "atetime\030\003 \001(\t\022%\n\004info\030\004 \001(\0132\027.recordlist"
-    ".Player_Info\022\017\n\007is_temp\030\005 \001(\005\"5\n\nRecordL"
-    "ist\022\'\n\004item\030\001 \003(\0132\031.recordlist.Player_Re"
-    "cordb\006proto3"
+    "de\030\003 \001(\005\022\021\n\tarea_name\030\004 \001(\t\022\030\n\014ninja_num"
+    "ber\030\006 \003(\005B\002\020\000\022\014\n\004rank\030\007 \001(\005\022\032\n\016fashion_n"
+    "umber\030\010 \003(\005B\002\020\000\0227\n\016dynamic_avatar\030\t \001(\0132"
+    "\037.recordlist.Dynamic_Avatar_Info\"{\n\rPlay"
+    "er_Record\022\021\n\ttimestamp\030\001 \001(\003\022\r\n\005statu\030\002 "
+    "\001(\005\022\020\n\010datetime\030\003 \001(\t\022%\n\004info\030\004 \001(\0132\027.re"
+    "cordlist.Player_Info\022\017\n\007is_temp\030\005 \001(\005\"5\n"
+    "\nRecordList\022\'\n\004item\030\001 \003(\0132\031.recordlist.P"
+    "layer_Recordb\006proto3"
 };
 static ::absl::once_flag descriptor_table_recordlist_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_recordlist_2eproto = {
     false,
     false,
-    492,
+    500,
     descriptor_table_protodef_recordlist_2eproto,
     "recordlist.proto",
     &descriptor_table_recordlist_2eproto_once,
@@ -551,9 +549,7 @@ PROTOBUF_NDEBUG_INLINE Player_Info::Impl_::Impl_(
       : _has_bits_{from._has_bits_},
         _cached_size_{0},
         ninja_number_{visibility, arena, from.ninja_number_},
-        _ninja_number_cached_byte_size_{0},
         fashion_number_{visibility, arena, from.fashion_number_},
-        _fashion_number_cached_byte_size_{0},
         nickname_(arena, from.nickname_),
         avatar_url_(arena, from.avatar_url_),
         area_name_(arena, from.area_name_) {}
@@ -590,9 +586,7 @@ PROTOBUF_NDEBUG_INLINE Player_Info::Impl_::Impl_(
     ::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
       : _cached_size_{0},
         ninja_number_{visibility, arena},
-        _ninja_number_cached_byte_size_{0},
         fashion_number_{visibility, arena},
-        _fashion_number_cached_byte_size_{0},
         nickname_(arena),
         avatar_url_(arena),
         area_name_(arena) {}
@@ -713,15 +707,15 @@ Player_Info::_table_ = {
     {::_pbi::TcParser::FastUS1,
      {34, 2, 0, PROTOBUF_FIELD_OFFSET(Player_Info, _impl_.area_name_)}},
     {::_pbi::TcParser::MiniParse, {}},
-    // repeated int32 ninja_number = 6;
-    {::_pbi::TcParser::FastV32P1,
-     {50, 63, 0, PROTOBUF_FIELD_OFFSET(Player_Info, _impl_.ninja_number_)}},
+    // repeated int32 ninja_number = 6 [packed = false];
+    {::_pbi::TcParser::FastV32R1,
+     {48, 63, 0, PROTOBUF_FIELD_OFFSET(Player_Info, _impl_.ninja_number_)}},
     // int32 rank = 7;
     {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(Player_Info, _impl_.rank_), 5>(),
      {56, 5, 0, PROTOBUF_FIELD_OFFSET(Player_Info, _impl_.rank_)}},
-    // repeated int32 fashion_number = 8;
-    {::_pbi::TcParser::FastV32P1,
-     {66, 63, 0, PROTOBUF_FIELD_OFFSET(Player_Info, _impl_.fashion_number_)}},
+    // repeated int32 fashion_number = 8 [packed = false];
+    {::_pbi::TcParser::FastV32R1,
+     {64, 63, 0, PROTOBUF_FIELD_OFFSET(Player_Info, _impl_.fashion_number_)}},
     // .recordlist.Dynamic_Avatar_Info dynamic_avatar = 9;
     {::_pbi::TcParser::FastMtS1,
      {74, 3, 0, PROTOBUF_FIELD_OFFSET(Player_Info, _impl_.dynamic_avatar_)}},
@@ -746,15 +740,15 @@ Player_Info::_table_ = {
     // string area_name = 4;
     {PROTOBUF_FIELD_OFFSET(Player_Info, _impl_.area_name_), _Internal::kHasBitsOffset + 2, 0,
     (0 | ::_fl::kFcOptional | ::_fl::kUtf8String | ::_fl::kRepAString)},
-    // repeated int32 ninja_number = 6;
+    // repeated int32 ninja_number = 6 [packed = false];
     {PROTOBUF_FIELD_OFFSET(Player_Info, _impl_.ninja_number_), -1, 0,
-    (0 | ::_fl::kFcRepeated | ::_fl::kPackedInt32)},
+    (0 | ::_fl::kFcRepeated | ::_fl::kInt32)},
     // int32 rank = 7;
     {PROTOBUF_FIELD_OFFSET(Player_Info, _impl_.rank_), _Internal::kHasBitsOffset + 5, 0,
     (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
-    // repeated int32 fashion_number = 8;
+    // repeated int32 fashion_number = 8 [packed = false];
     {PROTOBUF_FIELD_OFFSET(Player_Info, _impl_.fashion_number_), -1, 0,
-    (0 | ::_fl::kFcRepeated | ::_fl::kPackedInt32)},
+    (0 | ::_fl::kFcRepeated | ::_fl::kInt32)},
     // .recordlist.Dynamic_Avatar_Info dynamic_avatar = 9;
     {PROTOBUF_FIELD_OFFSET(Player_Info, _impl_.dynamic_avatar_), _Internal::kHasBitsOffset + 3, 0,
     (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
@@ -858,13 +852,11 @@ PROTOBUF_NOINLINE void Player_Info::Clear() {
     }
   }
 
-  // repeated int32 ninja_number = 6;
-  {
-    int byte_size = this_._impl_._ninja_number_cached_byte_size_.Get();
-    if (byte_size > 0) {
-      target = stream->WriteInt32Packed(
-          6, this_._internal_ninja_number(), byte_size, target);
-    }
+  // repeated int32 ninja_number = 6 [packed = false];
+  for (int i = 0, n = this_._internal_ninja_number_size(); i < n; ++i) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(
+        6, this_._internal_ninja_number().Get(i), target);
   }
 
   // int32 rank = 7;
@@ -876,13 +868,11 @@ PROTOBUF_NOINLINE void Player_Info::Clear() {
     }
   }
 
-  // repeated int32 fashion_number = 8;
-  {
-    int byte_size = this_._impl_._fashion_number_cached_byte_size_.Get();
-    if (byte_size > 0) {
-      target = stream->WriteInt32Packed(
-          8, this_._internal_fashion_number(), byte_size, target);
-    }
+  // repeated int32 fashion_number = 8 [packed = false];
+  for (int i = 0, n = this_._internal_fashion_number_size(); i < n; ++i) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(
+        8, this_._internal_fashion_number().Get(i), target);
   }
 
   cached_has_bits = this_._impl_._has_bits_[0];
@@ -918,19 +908,21 @@ PROTOBUF_NOINLINE void Player_Info::Clear() {
 
   ::_pbi::Prefetch5LinesFrom7Lines(&this_);
    {
-    // repeated int32 ninja_number = 6;
+    // repeated int32 ninja_number = 6 [packed = false];
     {
-      total_size +=
-          ::_pbi::WireFormatLite::Int32SizeWithPackedTagSize(
-              this_._internal_ninja_number(), 1,
-              this_._impl_._ninja_number_cached_byte_size_);
+      ::size_t data_size = ::_pbi::WireFormatLite::Int32Size(
+          this_._internal_ninja_number());
+      ::size_t tag_size = ::size_t{1} *
+          ::_pbi::FromIntSize(this_._internal_ninja_number_size());
+      total_size += tag_size + data_size;
     }
-    // repeated int32 fashion_number = 8;
+    // repeated int32 fashion_number = 8 [packed = false];
     {
-      total_size +=
-          ::_pbi::WireFormatLite::Int32SizeWithPackedTagSize(
-              this_._internal_fashion_number(), 1,
-              this_._impl_._fashion_number_cached_byte_size_);
+      ::size_t data_size = ::_pbi::WireFormatLite::Int32Size(
+          this_._internal_fashion_number());
+      ::size_t tag_size = ::size_t{1} *
+          ::_pbi::FromIntSize(this_._internal_fashion_number_size());
+      total_size += tag_size + data_size;
     }
   }
   cached_has_bits = this_._impl_._has_bits_[0];

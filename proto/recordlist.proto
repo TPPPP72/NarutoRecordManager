@@ -14,9 +14,9 @@ message Player_Info {
   string avatar_url = 2; //头像网址（部分可解析）
   int32 area_code = 3; //区号+2000
   string area_name = 4; //区名
-  repeated int32 ninja_number = 6; //忍者编码
+  repeated int32 ninja_number = 6 [packed = false]; //忍者编码
   int32 rank = 7; //段位排名
-  repeated int32 fashion_number = 8; //时装编码
+  repeated int32 fashion_number = 8 [packed = false]; //时装编码
   Dynamic_Avatar_Info dynamic_avatar  = 9; //动态头像信息
 }
 

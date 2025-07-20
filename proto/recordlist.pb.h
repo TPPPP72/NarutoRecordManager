@@ -437,7 +437,7 @@ class Player_Info final : public ::google::protobuf::Message
     kAreaCodeFieldNumber = 3,
     kRankFieldNumber = 7,
   };
-  // repeated int32 ninja_number = 6;
+  // repeated int32 ninja_number = 6 [packed = false];
   int ninja_number_size() const;
   private:
   int _internal_ninja_number_size() const;
@@ -455,7 +455,7 @@ class Player_Info final : public ::google::protobuf::Message
   ::google::protobuf::RepeatedField<::int32_t>* PROTOBUF_NONNULL _internal_mutable_ninja_number();
 
   public:
-  // repeated int32 fashion_number = 8;
+  // repeated int32 fashion_number = 8 [packed = false];
   int fashion_number_size() const;
   private:
   int _internal_fashion_number_size() const;
@@ -580,9 +580,7 @@ class Player_Info final : public ::google::protobuf::Message
     ::google::protobuf::internal::HasBits<1> _has_bits_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     ::google::protobuf::RepeatedField<::int32_t> ninja_number_;
-    ::google::protobuf::internal::CachedSize _ninja_number_cached_byte_size_;
     ::google::protobuf::RepeatedField<::int32_t> fashion_number_;
-    ::google::protobuf::internal::CachedSize _fashion_number_cached_byte_size_;
     ::google::protobuf::internal::ArenaStringPtr nickname_;
     ::google::protobuf::internal::ArenaStringPtr avatar_url_;
     ::google::protobuf::internal::ArenaStringPtr area_name_;
@@ -1330,7 +1328,7 @@ inline void Player_Info::set_allocated_area_name(::std::string* PROTOBUF_NULLABL
   // @@protoc_insertion_point(field_set_allocated:recordlist.Player_Info.area_name)
 }
 
-// repeated int32 ninja_number = 6;
+// repeated int32 ninja_number = 6 [packed = false];
 inline int Player_Info::_internal_ninja_number_size() const {
   return _internal_ninja_number().size();
 }
@@ -1400,7 +1398,7 @@ inline void Player_Info::_internal_set_rank(::int32_t value) {
   _impl_.rank_ = value;
 }
 
-// repeated int32 fashion_number = 8;
+// repeated int32 fashion_number = 8 [packed = false];
 inline int Player_Info::_internal_fashion_number_size() const {
   return _internal_fashion_number().size();
 }

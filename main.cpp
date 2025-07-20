@@ -690,10 +690,7 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
         }
         ManagerData::Player_Record new_record;
         new_record.timestamp = to_timestamp(file);
-        if (record.settle_information.inner.statu == 0)
-          new_record.statu = 3;
-        else
-          new_record.statu = record.settle_information.inner.statu;
+        new_record.statu = record.settle_information.inner.statu;
         new_record.datetime = file;
         new_record.info = {select.nickname,
                            select.avatar_url,
