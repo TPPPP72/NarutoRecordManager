@@ -660,11 +660,23 @@ void MyFrame::OnEditOwnership(wxCommandEvent &event) {
             return record.datetime == item;
           });
         }
-        hexwriter::Write_Record_List(
+        if(!records.empty()){
+          hexwriter::Write_Record_List(
             records, std::format("{}LocalRecordList_JueDou_{}",
                                  FileManager::Get_Local_Device_TEMP_Path(
                                      selected_device_id),
                                  game_id));
+          ADB::PushRemoteFile_Full(
+          FileManager::GetListByDeviceID(lists, selected_device_id),
+          std::format(
+              "{}LocalRecordList_JueDou_{}",
+              FileManager::Get_Local_Device_TEMP_Path(selected_device_id),
+              game_id));
+        }else{
+          ADB::DeleteRemoteFile(FileManager::GetListByDeviceID(lists, selected_device_id), std::format(
+              "LocalRecordList_JueDou_{}",game_id));
+        }
+        
       }
       wxTheApp->CallAfter([=, this]() {
         for (const auto &item : Change_List) {
