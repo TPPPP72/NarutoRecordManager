@@ -1955,14 +1955,14 @@ class User_Data final : public ::google::protobuf::Message
   void _internal_set_level(::int32_t value);
 
   public:
-  // int32 score = 5;
+  // uint32 score = 5;
   void clear_score() ;
-  ::int32_t score() const;
-  void set_score(::int32_t value);
+  ::uint32_t score() const;
+  void set_score(::uint32_t value);
 
   private:
-  ::int32_t _internal_score() const;
-  void _internal_set_score(::int32_t value);
+  ::uint32_t _internal_score() const;
+  void _internal_set_score(::uint32_t value);
 
   public:
   // int32 rank = 51;
@@ -2009,7 +2009,7 @@ class User_Data final : public ::google::protobuf::Message
     ::record::Dynamic_Avatar* PROTOBUF_NULLABLE dynamic_avatar_;
     ::int64_t user_id_;
     ::int32_t level_;
-    ::int32_t score_;
+    ::uint32_t score_;
     ::int32_t rank_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
@@ -3364,26 +3364,26 @@ inline void User_Data::_internal_set_level(::int32_t value) {
   _impl_.level_ = value;
 }
 
-// int32 score = 5;
+// uint32 score = 5;
 inline void User_Data::clear_score() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.score_ = 0;
+  _impl_.score_ = 0u;
   _impl_._has_bits_[0] &= ~0x00000100u;
 }
-inline ::int32_t User_Data::score() const {
+inline ::uint32_t User_Data::score() const {
   // @@protoc_insertion_point(field_get:record.User_Data.score)
   return _internal_score();
 }
-inline void User_Data::set_score(::int32_t value) {
+inline void User_Data::set_score(::uint32_t value) {
   _internal_set_score(value);
   _impl_._has_bits_[0] |= 0x00000100u;
   // @@protoc_insertion_point(field_set:record.User_Data.score)
 }
-inline ::int32_t User_Data::_internal_score() const {
+inline ::uint32_t User_Data::_internal_score() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
   return _impl_.score_;
 }
-inline void User_Data::_internal_set_score(::int32_t value) {
+inline void User_Data::_internal_set_score(::uint32_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.score_ = value;
 }

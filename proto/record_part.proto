@@ -39,7 +39,7 @@ message User_Data{
   int64 user_id = 1; //用户id
   string nickname = 2; //昵称
   int32 level = 3; //等级
-  int32 score = 5; //段位分数
+  uint32 score = 5; //段位分数
   Game game = 7; //对局数据
   string avatar_url = 8; //头像
   string area_name = 27; //区名

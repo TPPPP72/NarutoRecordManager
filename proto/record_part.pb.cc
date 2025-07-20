@@ -245,7 +245,7 @@ inline constexpr User_Data::Impl_::Impl_(
         dynamic_avatar_{nullptr},
         user_id_{::int64_t{0}},
         level_{0},
-        score_{0},
+        score_{0u},
         rank_{0} {}
 
 template <typename>
@@ -510,7 +510,7 @@ const char descriptor_table_protodef_record_5fpart_2eproto[] ABSL_ATTRIBUTE_SECT
     "2\r.record.NinjaB\002\020\000\"&\n\021User_Data_Private"
     "\022\021\n\tarea_code\030\002 \001(\005\"\371\001\n\tUser_Data\022\017\n\007use"
     "r_id\030\001 \001(\003\022\020\n\010nickname\030\002 \001(\t\022\r\n\005level\030\003 "
-    "\001(\005\022\r\n\005score\030\005 \001(\005\022\032\n\004game\030\007 \001(\0132\014.recor"
+    "\001(\005\022\r\n\005score\030\005 \001(\r\022\032\n\004game\030\007 \001(\0132\014.recor"
     "d.Game\022\022\n\navatar_url\030\010 \001(\t\022\021\n\tarea_name\030"
     "\033 \001(\t\022*\n\007private\030, \001(\0132\031.record.User_Dat"
     "a_Private\022\014\n\004rank\0303 \001(\005\022.\n\016dynamic_avata"
@@ -2276,7 +2276,7 @@ User_Data::_table_ = {
     {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(User_Data, _impl_.level_), 7>(),
      {24, 7, 0, PROTOBUF_FIELD_OFFSET(User_Data, _impl_.level_)}},
     {::_pbi::TcParser::MiniParse, {}},
-    // int32 score = 5;
+    // uint32 score = 5;
     {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(User_Data, _impl_.score_), 8>(),
      {40, 8, 0, PROTOBUF_FIELD_OFFSET(User_Data, _impl_.score_)}},
     {::_pbi::TcParser::MiniParse, {}},
@@ -2318,9 +2318,9 @@ User_Data::_table_ = {
     // int32 level = 3;
     {PROTOBUF_FIELD_OFFSET(User_Data, _impl_.level_), _Internal::kHasBitsOffset + 7, 0,
     (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
-    // int32 score = 5;
+    // uint32 score = 5;
     {PROTOBUF_FIELD_OFFSET(User_Data, _impl_.score_), _Internal::kHasBitsOffset + 8, 0,
-    (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+    (0 | ::_fl::kFcOptional | ::_fl::kUInt32)},
     // .record.Game game = 7;
     {PROTOBUF_FIELD_OFFSET(User_Data, _impl_.game_), _Internal::kHasBitsOffset + 3, 0,
     (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
@@ -2441,12 +2441,12 @@ PROTOBUF_NOINLINE void User_Data::Clear() {
     }
   }
 
-  // int32 score = 5;
+  // uint32 score = 5;
   if ((this_._impl_._has_bits_[0] & 0x00000100u) != 0) {
     if (this_._internal_score() != 0) {
-      target =
-          ::google::protobuf::internal::WireFormatLite::WriteInt32ToArrayWithField<5>(
-              stream, this_._internal_score(), target);
+      target = stream->EnsureSpace(target);
+      target = ::_pbi::WireFormatLite::WriteUInt32ToArray(
+          5, this_._internal_score(), target);
     }
   }
 
@@ -2579,10 +2579,10 @@ PROTOBUF_NOINLINE void User_Data::Clear() {
     }
   }
   if ((cached_has_bits & 0x00000300u) != 0) {
-    // int32 score = 5;
+    // uint32 score = 5;
     if ((cached_has_bits & 0x00000100u) != 0) {
       if (this_._internal_score() != 0) {
-        total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+        total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(
             this_._internal_score());
       }
     }
